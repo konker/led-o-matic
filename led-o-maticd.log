@@ -1,0 +1,28 @@
+----------------------------------------------
+Set SID: 10160
+Starting UDP socket listener...
+Address already in use
+Address already in use
+Failed to bind to socket. Exiting
+----------------------------------------------
+Set SID: 10285
+Starting UDP socket listener...
+Address already in use
+Address already in use
+Failed to bind to socket. Exiting
+----------------------------------------------
+Set SID: 11920
+Starting UDP socket listener...
+Listener: packet contains "assdf
+"
+----------------------------------------------
+Set SID: 12432
+Starting UDP socket listener...
+Listener: packet contains "I AM KONKER!
+"
+Listener: packet contains "HEAR MY ROAR!!!
+"
+Listener: packet contains "I am 
+"
+Listener: packet contains "The Egg Man
+"
