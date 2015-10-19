@@ -31,3 +31,5 @@
 # Debug files
 *.dSYM/
 
+# Project specific
+led-o-maticd

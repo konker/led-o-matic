@@ -11,12 +11,18 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <pthread.h>
 
 #define LOG_FILE "led-o-maticd.log"
 #define PID_FILE "led-o-maticd.pid"
 
 #define UDP_PORT "49501"
 #define MAXBUFLEN 100
+
+#define CMD_EXIT "EXIT"
+
+
+static FILE *logfp;
 
 /**
   Thanks to Beej
@@ -31,12 +37,102 @@ void *get_in_addr(struct sockaddr *sa) {
     return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
+static void *udp_listener() {
+    // ----------------------------------------------------------------------
+    // UDP listener
+    fprintf(logfp, "UDP listener: starting...\n");
+    int sockfd;
+    struct addrinfo hints, *servinfo, *p;
+    int rv;
+    int numbytes;
+    struct sockaddr_storage their_addr;
+    char buf[MAXBUFLEN];
+    socklen_t addr_len;
+    //char s[INET6_ADDRSTRLEN];
+
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC; // set to AF_INET to force IPv4
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_flags = AI_PASSIVE | AI_ADDRCONFIG; // use my IP
+
+    if ((rv = getaddrinfo(NULL, UDP_PORT, &hints, &servinfo)) != 0) {
+        fprintf(logfp, "UDP listener: Error: getaddrinfo: %s\n", gai_strerror(rv));
+        fclose(logfp);
+        exit(EXIT_FAILURE);
+    }
+
+    // loop through all the results and bind to the first we can
+    for(p = servinfo; p != NULL; p = p->ai_next) {
+        sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+        if (sockfd == -1) {
+            fprintf(logfp, "%s\n", strerror(errno));
+            continue;
+        }
+
+        if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+            close(sockfd);
+            fprintf(logfp, "%s\n", strerror(errno));
+            continue;
+        }
+
+        // Success, we have bound to a port
+        break;
+    }
+
+    if (p == NULL) {
+        fprintf(logfp, "UDP listener: Failed to bind to socket. Exiting\n");
+        fclose(logfp);
+        exit(EXIT_FAILURE);
+    }
+
+    freeaddrinfo(servinfo);
+
+    // Listen loop
+    while (1) {
+        addr_len = sizeof their_addr;
+        printf("UDP listener: waiting to recvfrom...\n");
+        numbytes = recvfrom(sockfd,
+                            buf,
+                            MAXBUFLEN-1,
+                            0,
+                            (struct sockaddr *)&their_addr,
+                            &addr_len);
+        if (numbytes == -1) {
+            fprintf(logfp, "UDP listener: error in recvfrom\n");
+            fclose(logfp);
+            pthread_exit(NULL);
+            //exit(EXIT_FAILURE);
+        }
+
+        /*
+        printf("Listener: got packet from %s\n",
+            inet_ntop(their_addr.ss_family,
+                get_in_addr((struct sockaddr *)&their_addr),
+                s, sizeof s));
+        printf("Listener: packet is %d bytes long\n", numbytes);
+        */
+        buf[numbytes-1] = '\0';
+        fprintf(logfp, "UDP listener: received: \"%s\"\n", buf);
+        fflush(logfp);
+
+        // Handle the command
+        if (strcmp(buf, CMD_EXIT) == 0) {
+            fprintf(logfp, "UDP listener: [exit]\n");
+        }
+        else {
+            fprintf(logfp, "UDP listener: [unknown]\n");
+        }
+        fflush(logfp);
+    }
+}
+
+
 int main() {
     // Process id and session id for the daemon
     pid_t pid, sid;
 
     // Log file and PID file output streams
-    FILE *logfp, *pidfp;
+    FILE *pidfp;
 
     // ----------------------------------------------------------------------
     // Fork a process
@@ -103,100 +199,34 @@ int main() {
     close(STDERR_FILENO);
 
     // ----------------------------------------------------------------------
-    // UDP listener
-    fprintf(logfp, "Starting UDP socket listener...\n");
-    int sockfd;
-    struct addrinfo hints, *servinfo, *p;
-    int rv;
-    int numbytes;
-    struct sockaddr_storage their_addr;
-    char buf[MAXBUFLEN];
-    socklen_t addr_len;
-    char s[INET6_ADDRSTRLEN];
-
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC; // set to AF_INET to force IPv4
-    hints.ai_socktype = SOCK_DGRAM;
-    hints.ai_flags = AI_PASSIVE | AI_ADDRCONFIG; // use my IP
-
-    if ((rv = getaddrinfo(NULL, UDP_PORT, &hints, &servinfo)) != 0) {
-        fprintf(logfp, "Error: getaddrinfo: %s\n", gai_strerror(rv));
+    // UDP listener thread
+fprintf(logfp, "KONK0\n");
+    pthread_t tid;
+    int rc = pthread_create(&tid, NULL, udp_listener, NULL);
+fprintf(logfp, "KONK1\n");
+    if (rc) {
+        fprintf(logfp, "ERROR: return code from pthread_create() is %d\n", rc);
         fclose(logfp);
         exit(EXIT_FAILURE);
     }
-
-    // loop through all the results and bind to the first we can
-    for(p = servinfo; p != NULL; p = p->ai_next) {
-        sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
-        if (sockfd == -1) {
-            fprintf(logfp, "%s\n", strerror(errno));
-            continue;
-        }
-
-        if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-            close(sockfd);
-            fprintf(logfp, "%s\n", strerror(errno));
-            continue;
-        }
-
-        // Success, we have bound to a port
-        break;
-    }
-
-    if (p == NULL) {
-        fprintf(logfp, "Failed to bind to socket. Exiting\n");
-        fclose(logfp);
-        exit(EXIT_FAILURE);
-    }
-
-    freeaddrinfo(servinfo);
+fprintf(logfp, "KONK2\n");
 
     // ----------------------------------------------------------------------
     // Main loop
-    while (1) {
-        addr_len = sizeof their_addr;
-        printf("Listener: waiting to recvfrom...\n");
-        numbytes = recvfrom(sockfd,
-                            buf,
-                            MAXBUFLEN-1,
-                            0,
-                            (struct sockaddr *)&their_addr,
-                            &addr_len);
-        if (numbytes == -1) {
-            fprintf(logfp, "Listener: error in recvfrom\n");
-            fclose(logfp);
-            exit(EXIT_FAILURE);
-        }
-
-        printf("Listener: got packet from %s\n",
-            inet_ntop(their_addr.ss_family,
-                get_in_addr((struct sockaddr *)&their_addr),
-                s, sizeof s));
-        printf("Listener: packet is %d bytes long\n", numbytes);
-        buf[numbytes] = '\0';
-        fprintf(logfp, "Listener: packet contains \"%s\"\n", buf);
-        fflush(logfp);
-
-        /*
-        close(sockfd);
-        fclose(logfp);
-        exit(EXIT_SUCCESS);
-        */
-
-        /*
     int i = 0;
-        fprintf(logfp, "TESTD\n");
+    while (1) {
+        fprintf(logfp, "testd %d\n", i);
         fflush(logfp);
-        if (++i >= 3) {
+        if (++i >= 12) {
             fprintf(logfp, "Goodbye\n");
 
             // ----------------------------------------------------------------------
             //[TODO: how to tidy up at exit?]
             fclose(logfp);
+            pthread_exit(NULL);
             exit(EXIT_SUCCESS);
         }
-        sleep(1);
-        */
+        sleep(3);
     }
 }
 
