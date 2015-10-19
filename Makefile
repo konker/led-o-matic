@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -g -I../UltrathinLEDMatrix -L../UltrathinLEDMatrix -lUltrathinLEDMatrix -lpthread -fno-builtin -lm -lwiringPi
+CFLAGS = -Wall -g -I../ultrathin_led_matrix/include -L../ultrathin_led_matrix -lulm -lpthread -fno-builtin -lm -lwiringPi
 
 led-o-maticd: led-o-maticd.c
 	$(CC) -o led-o-maticd $< $(CFLAGS)
