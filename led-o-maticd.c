@@ -15,8 +15,7 @@
 #include <pthread.h>
 #include <signal.h>
 
-#include <wiringPi.h>
-#include <ulm.h>
+#include <kulm.h>
 
 #define LEDOMATIC_LOG_FILE "/var/log/led-o-maticd.log"
 #define LEDOMATIC_PID_FILE "/var/run/led-o-maticd.pid"
@@ -61,7 +60,7 @@ volatile static bool ledomatic_running;
 static uint8_t ledomatic_display_buffer[
                     LEDOMATIC_MATRIX_HEIGHT *
                     LEDOMATIC_MATRIX_ROW_WIDTH];
-static ulm_matrix *ledomatic_matrix;
+static kulm_matrix *ledomatic_matrix;
 
 
 /**
@@ -82,7 +81,7 @@ static void signal_handler(int signum) {
 static void *matrix_scanner() {
     LEDOMATIC_LOG("Matrix scanner: starting\n");
     while (ledomatic_running) {
-        ulm_scan(ledomatic_matrix);
+        kulm_scan(ledomatic_matrix);
     }
     LEDOMATIC_LOG("Matrix scanner: exiting\n");
     pthread_exit(NULL);
@@ -96,50 +95,50 @@ static void *matrix_scanner() {
 */
 static void handle_command(char *buf) {
     float num;
-    char str[ULM_TEXT1_LEN];
+    char str[KULM_TEXT1_LEN];
     if (strcasecmp(buf, LEDOMATIC_CMD_EXIT) == 0) {
         LEDOMATIC_LOG("UDP listener: [exit]\n");
         ledomatic_running = false;
     }
     else if (strcasecmp(buf, LEDOMATIC_CMD_STOP) == 0) {
         LEDOMATIC_LOG("UDP listener: [stop]\n");
-        ulm_stop(ledomatic_matrix);
+        kulm_stop(ledomatic_matrix);
     }
     else if (strcasecmp(buf, LEDOMATIC_CMD_START) == 0) {
         LEDOMATIC_LOG("UDP listener: [start]\n");
-        ulm_start(ledomatic_matrix);
+        kulm_start(ledomatic_matrix);
     }
     else if (strcasecmp(buf, LEDOMATIC_CMD_OFF) == 0) {
         LEDOMATIC_LOG("UDP listener: [off]\n");
-        ulm_off(ledomatic_matrix);
+        kulm_off(ledomatic_matrix);
     }
     else if (strcasecmp(buf, LEDOMATIC_CMD_ON) == 0) {
         LEDOMATIC_LOG("UDP listener: [on]\n");
-        ulm_on(ledomatic_matrix);
+        kulm_on(ledomatic_matrix);
     }
     else if (strcasecmp(buf, LEDOMATIC_CMD_REVERSE) == 0) {
         LEDOMATIC_LOG("UDP listener: [reverse]\n");
-        ulm_reverse(ledomatic_matrix);
+        kulm_reverse(ledomatic_matrix);
     }
     else if (strcasecmp(buf, LEDOMATIC_CMD_CLEAR) == 0) {
         LEDOMATIC_LOG("UDP listener: [clear]\n");
-        ulm_clear(ledomatic_matrix);
+        kulm_clear(ledomatic_matrix);
     }
     else if (sscanf(buf, LEDOMATIC_CMD_TEXT1, str) == 1) {
         LEDOMATIC_LOG("UDP listener: [text1 => %s]\n", str);
-        ulm_set_text1(ledomatic_matrix, str);
+        kulm_set_text1(ledomatic_matrix, str);
     }
     else if (sscanf(buf, LEDOMATIC_CMD_SPEED1, &num) == 1) {
         LEDOMATIC_LOG("UDP listener: [speed1 => %f]\n", num);
-        ulm_set_text1_speed(ledomatic_matrix, num);
+        kulm_set_text1_speed(ledomatic_matrix, num);
     }
     else if (sscanf(buf, LEDOMATIC_CMD_TEXT2, str) == 1) {
         LEDOMATIC_LOG("UDP listener: [text2 => %s]\n", str);
-        ulm_set_text2(ledomatic_matrix, str);
+        kulm_set_text2(ledomatic_matrix, str);
     }
     else if (sscanf(buf, LEDOMATIC_CMD_SPEED2, &num) == 1) {
         LEDOMATIC_LOG("UDP listener: [speed2 => %f]\n", num);
-        ulm_set_text2_speed(ledomatic_matrix, num);
+        kulm_set_text2_speed(ledomatic_matrix, num);
     }
     else {
         LEDOMATIC_LOG("UDP listener: [unknown]\n");
@@ -232,9 +231,13 @@ static void * udp_listener() {
   [TODO: comment]
 */
 static void main_loop() {
+    struct timespec delay_t;
+    delay_t.tv_sec = 0;
+    delay_t.tv_nsec = 100000; // 100ms
+
     while (ledomatic_running) {
-        ulm_tick(ledomatic_matrix);
-        delay(100);
+        kulm_tick(ledomatic_matrix);
+        nanosleep(&delay_t, NULL);
     }
 }
 
@@ -311,13 +314,13 @@ int main() {
 
     // ----------------------------------------------------------------------
     // Initialize matrix
-    wiringPiSetup();
+    kulm_begin();
 
-    ledomatic_matrix = ulm_create(
-                    ledomatic_display_buffer,
-                    LEDOMATIC_MATRIX_WIDTH,
-                    LEDOMATIC_MATRIX_HEIGHT);
-    ulm_init(ledomatic_matrix, 0, 2, 3, 12, 13, 14, 21, 22);
+    ledomatic_matrix = kulm_create(
+                            ledomatic_display_buffer,
+                            LEDOMATIC_MATRIX_WIDTH,
+                            LEDOMATIC_MATRIX_HEIGHT);
+    kulm_init(ledomatic_matrix, 0, 2, 3, 12, 13, 14, 21, 22);
     ledomatic_running = true;
 
     // ----------------------------------------------------------------------
@@ -359,7 +362,7 @@ int main() {
 
     // ----------------------------------------------------------------------
     // Clean up and exit
-    ulm_destroy(ledomatic_matrix);
+    kulm_destroy(ledomatic_matrix);
     if (unlink(LEDOMATIC_PID_FILE) == -1) {
         LEDOMATIC_LOG("%s\n", strerror(errno));
     }
