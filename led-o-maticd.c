@@ -16,6 +16,8 @@
 #include <signal.h>
 
 #include <kulm.h>
+#include "konker_bitfont_basic.h"
+
 
 #define LEDOMATIC_LOG_FILE "/var/log/led-o-maticd.log"
 #define LEDOMATIC_PID_FILE "/var/run/led-o-maticd.pid"
@@ -152,7 +154,7 @@ static void handle_command(char *buf) {
   [TODO: comment]
 */
 static void * udp_listener() {
-    LEDOMATIC_LOG("UDP listener: starting...\n");
+    LEDOMATIC_LOG("UDP listener: port [%s]: starting...\n", LEDOMATIC_UDP_PORT);
     struct addrinfo hints, *servinfo, *p;
     int rv;
     int numbytes;
@@ -313,19 +315,26 @@ int main() {
     close(STDERR_FILENO);
 
     // ----------------------------------------------------------------------
-    // Initialize matrix
-    kulm_begin();
+    // Signal handler
+    signal(SIGINT, signal_handler);
 
+    // ----------------------------------------------------------------------
+    // Initialize matrix
+    if (kulm_begin() < 0) {
+        LEDOMATIC_LOG("%s\n", strerror(errno));
+        fclose(ledomatic_logfp);
+        exit(EXIT_FAILURE);
+    }
+
+    char *font = konker_bitfont_basic[0];
     ledomatic_matrix = kulm_create(
                             ledomatic_display_buffer,
                             LEDOMATIC_MATRIX_WIDTH,
-                            LEDOMATIC_MATRIX_HEIGHT);
+                            LEDOMATIC_MATRIX_HEIGHT,
+                            &font,
+                            konker_bitfont_basic_metrics);
     kulm_init(ledomatic_matrix, 0, 2, 3, 12, 13, 14, 21, 22);
     ledomatic_running = true;
-
-    // ----------------------------------------------------------------------
-    // Signal handler
-    signal(SIGINT, signal_handler);
 
     // ----------------------------------------------------------------------
     // UDP listener thread
@@ -350,6 +359,8 @@ int main() {
     // ----------------------------------------------------------------------
     // Call the main loop
     main_loop();
+
+    // Main loop now finished...
 
     // ----------------------------------------------------------------------
     // Stop the UDP listening thread
