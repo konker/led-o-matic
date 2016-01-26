@@ -15,9 +15,11 @@
 #include <pthread.h>
 #include <signal.h>
 
-#include <kulm.h>
-#include "konker_bitfont_basic.h"
+#include <kulm_matrix.h>
+#include <kulm_segment.h>
+#include <konker_hexfont_basic.h>
 
+#define LEDOMATIC_FORK 0
 
 #define LEDOMATIC_LOG_FILE "/var/log/led-o-maticd.log"
 #define LEDOMATIC_PID_FILE "/var/run/led-o-maticd.pid"
@@ -44,13 +46,9 @@
 // Clear the display
 #define LEDOMATIC_CMD_CLEAR "clear"
 // Set text1
-#define LEDOMATIC_CMD_TEXT1 "text1:%[^\t\n]"
+#define LEDOMATIC_CMD_TEXT "text:%[^\t\n]"
 // Set text1 scroll speed
-#define LEDOMATIC_CMD_SPEED1 "speed1:%f"
-// Set text2
-#define LEDOMATIC_CMD_TEXT2 "text2:%[^\t\n]"
-// Set text2 scroll speed
-#define LEDOMATIC_CMD_SPEED2 "speed2:%f"
+#define LEDOMATIC_CMD_SPEED "speed:%f"
 
 #define LEDOMATIC_LOG(...) fprintf(ledomatic_logfp, __VA_ARGS__); \
                            fflush(ledomatic_logfp);
@@ -83,7 +81,11 @@ static void signal_handler(int signum) {
 static void *matrix_scanner() {
     LEDOMATIC_LOG("Matrix scanner: starting\n");
     while (ledomatic_running) {
-        kulm_scan(ledomatic_matrix);
+#ifdef NON_GPIO_MACHINE
+        kulm_mat_dump_buffer(ledomatic_matrix, stdout);
+#else
+        kulm_mat_scan(ledomatic_matrix);
+#endif
     }
     LEDOMATIC_LOG("Matrix scanner: exiting\n");
     pthread_exit(NULL);
@@ -97,50 +99,44 @@ static void *matrix_scanner() {
 */
 static void handle_command(char *buf) {
     float num;
-    char str[KULM_TEXT1_LEN];
+    char str[KULM_TEXT_LEN];
     if (strcasecmp(buf, LEDOMATIC_CMD_EXIT) == 0) {
         LEDOMATIC_LOG("UDP listener: [exit]\n");
         ledomatic_running = false;
     }
     else if (strcasecmp(buf, LEDOMATIC_CMD_STOP) == 0) {
         LEDOMATIC_LOG("UDP listener: [stop]\n");
-        kulm_stop(ledomatic_matrix);
+        kulm_mat_stop(ledomatic_matrix);
     }
     else if (strcasecmp(buf, LEDOMATIC_CMD_START) == 0) {
         LEDOMATIC_LOG("UDP listener: [start]\n");
-        kulm_start(ledomatic_matrix);
+        kulm_mat_start(ledomatic_matrix);
     }
     else if (strcasecmp(buf, LEDOMATIC_CMD_OFF) == 0) {
         LEDOMATIC_LOG("UDP listener: [off]\n");
-        kulm_off(ledomatic_matrix);
+        kulm_mat_off(ledomatic_matrix);
     }
     else if (strcasecmp(buf, LEDOMATIC_CMD_ON) == 0) {
         LEDOMATIC_LOG("UDP listener: [on]\n");
-        kulm_on(ledomatic_matrix);
+        kulm_mat_on(ledomatic_matrix);
     }
+    /*[XXX: segment needed]
     else if (strcasecmp(buf, LEDOMATIC_CMD_REVERSE) == 0) {
         LEDOMATIC_LOG("UDP listener: [reverse]\n");
-        kulm_reverse(ledomatic_matrix);
+        kulm_mat_reverse(ledomatic_matrix);
     }
+    */
     else if (strcasecmp(buf, LEDOMATIC_CMD_CLEAR) == 0) {
         LEDOMATIC_LOG("UDP listener: [clear]\n");
-        kulm_clear(ledomatic_matrix);
+        kulm_mat_clear(ledomatic_matrix);
     }
-    else if (sscanf(buf, LEDOMATIC_CMD_TEXT1, str) == 1) {
-        LEDOMATIC_LOG("UDP listener: [text1 => %s]\n", str);
-        kulm_set_text1(ledomatic_matrix, str);
+    else if (sscanf(buf, LEDOMATIC_CMD_TEXT, str) == 1) {
+        LEDOMATIC_LOG("UDP listener: [text => %s]\n", str);
+        kulm_mat_simple_set_text(ledomatic_matrix, str);
     }
-    else if (sscanf(buf, LEDOMATIC_CMD_SPEED1, &num) == 1) {
-        LEDOMATIC_LOG("UDP listener: [speed1 => %f]\n", num);
-        kulm_set_text1_speed(ledomatic_matrix, num);
-    }
-    else if (sscanf(buf, LEDOMATIC_CMD_TEXT2, str) == 1) {
-        LEDOMATIC_LOG("UDP listener: [text2 => %s]\n", str);
-        kulm_set_text2(ledomatic_matrix, str);
-    }
-    else if (sscanf(buf, LEDOMATIC_CMD_SPEED2, &num) == 1) {
-        LEDOMATIC_LOG("UDP listener: [speed2 => %f]\n", num);
-        kulm_set_text2_speed(ledomatic_matrix, num);
+    else if (sscanf(buf, LEDOMATIC_CMD_SPEED, &num) == 1) {
+        LEDOMATIC_LOG("UDP listener: [speed => %f]\n", num);
+        kulm_mat_simple_set_text_speed(ledomatic_matrix, num);
     }
     else {
         LEDOMATIC_LOG("UDP listener: [unknown]\n");
@@ -238,12 +234,13 @@ static void main_loop() {
     delay_t.tv_nsec = 100000; // 100ms
 
     while (ledomatic_running) {
-        kulm_tick(ledomatic_matrix);
+        kulm_mat_tick(ledomatic_matrix);
         nanosleep(&delay_t, NULL);
     }
 }
 
 int main() {
+#if LEDOMATIC_FORK
     // Process id and session id for the daemon
     pid_t pid, sid;
 
@@ -280,6 +277,7 @@ int main() {
     // ----------------------------------------------------------------------
     // Change the file mask mode
     umask(0);
+#endif
 
     // ----------------------------------------------------------------------
     // Initialize log
@@ -290,6 +288,7 @@ int main() {
     }
     LEDOMATIC_LOG("----------------------------------------------\n");
 
+#if LEDOMATIC_FORK
     // ----------------------------------------------------------------------
     // Create a new SID for the child process
     sid = setsid();
@@ -313,27 +312,37 @@ int main() {
     close(STDIN_FILENO);
     close(STDOUT_FILENO);
     close(STDERR_FILENO);
+#endif
 
     // ----------------------------------------------------------------------
     // Signal handler
     signal(SIGINT, signal_handler);
 
     // ----------------------------------------------------------------------
-    // Initialize matrix
-    if (kulm_begin() < 0) {
-        LEDOMATIC_LOG("%s\n", strerror(errno));
+    // Initialize WirinPi if necessary
+#ifndef NON_GPIO_MACHINE
+    if (wiringPiSetup()) {
+        LEDOMATIC_LOG("ERROR Initializing WiringPi. Exiting. %s\n", strerror(errno));
         fclose(ledomatic_logfp);
         exit(EXIT_FAILURE);
     }
+#endif
 
-    char *font = konker_bitfont_basic[0];
-    ledomatic_matrix = kulm_create(
+    // ----------------------------------------------------------------------
+    // Create a matrix
+    ledomatic_matrix = kulm_mat_create(
                             ledomatic_display_buffer,
                             LEDOMATIC_MATRIX_WIDTH,
                             LEDOMATIC_MATRIX_HEIGHT,
-                            &font,
-                            konker_bitfont_basic_metrics);
-    kulm_init(ledomatic_matrix, 0, 2, 3, 12, 13, 14, 21, 22);
+                            0, 2, 3, 12, 13, 14, 21, 22);
+
+    // ----------------------------------------------------------------------
+    // Initialize some font(s)
+    hexfont * const font1 = hexfont_load_data(konker_hexfont_basic, 16);
+
+    // ----------------------------------------------------------------------
+    // Initialize the matrix
+    kulm_mat_simple_init(ledomatic_matrix, font1);
     ledomatic_running = true;
 
     // ----------------------------------------------------------------------
@@ -373,7 +382,7 @@ int main() {
 
     // ----------------------------------------------------------------------
     // Clean up and exit
-    kulm_destroy(ledomatic_matrix);
+    kulm_mat_destroy(ledomatic_matrix);
     if (unlink(LEDOMATIC_PID_FILE) == -1) {
         LEDOMATIC_LOG("%s\n", strerror(errno));
     }
