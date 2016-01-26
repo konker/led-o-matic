@@ -4,22 +4,21 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <strings.h>
 #include <fcntl.h>
 #include <syslog.h>
 #include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <netdb.h>
 #include <pthread.h>
 #include <signal.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
 
 #include <kulm_matrix.h>
 #include <kulm_segment.h>
 #include <konker_hexfont_basic.h>
-
-#define LEDOMATIC_FORK 0
 
 #define LEDOMATIC_LOG_FILE "/var/log/led-o-maticd.log"
 #define LEDOMATIC_PID_FILE "/var/run/led-o-maticd.pid"
@@ -57,10 +56,8 @@ static int ledomatic_sockfd;
 static FILE *ledomatic_logfp;
 volatile static bool ledomatic_running;
 
-static uint8_t ledomatic_display_buffer[
-                    LEDOMATIC_MATRIX_HEIGHT *
-                    LEDOMATIC_MATRIX_ROW_WIDTH];
 static kulm_matrix *ledomatic_matrix;
+static pthread_mutex_t ledomatic_lock;
 
 
 /**
@@ -78,19 +75,35 @@ static void signal_handler(int signum) {
   Main matrix scan thread function
   [TODO: comment]
 */
+#ifndef NON_GPIO_MACHINE
 static void *matrix_scanner() {
     LEDOMATIC_LOG("Matrix scanner: starting\n");
     while (ledomatic_running) {
-#ifdef NON_GPIO_MACHINE
-        kulm_mat_dump_buffer(ledomatic_matrix, stdout);
-#else
+        pthread_mutex_lock(&ledomatic_lock);
         kulm_mat_scan(ledomatic_matrix);
-#endif
+        pthread_mutex_unlock(&ledomatic_lock);
     }
     LEDOMATIC_LOG("Matrix scanner: exiting\n");
     pthread_exit(NULL);
     return NULL;
 }
+#endif
+
+#ifdef NON_GPIO_MACHINE
+static void *matrix_dumper() {
+    LEDOMATIC_LOG("Matrix dumper: starting\n");
+    while (ledomatic_running) {
+        pthread_mutex_lock(&ledomatic_lock);
+        kulm_mat_dump_buffer(ledomatic_matrix, stdout);
+        pthread_mutex_unlock(&ledomatic_lock);
+
+        sleep(1);
+    }
+    LEDOMATIC_LOG("Matrix dumper: exiting\n");
+    pthread_exit(NULL);
+    return NULL;
+}
+#endif
 
 /**
   // ----------------------------------------------------------------------
@@ -234,13 +247,15 @@ static void main_loop() {
     delay_t.tv_nsec = 100000; // 100ms
 
     while (ledomatic_running) {
+        pthread_mutex_lock(&ledomatic_lock);
         kulm_mat_tick(ledomatic_matrix);
+        pthread_mutex_unlock(&ledomatic_lock);
         nanosleep(&delay_t, NULL);
     }
 }
 
 int main() {
-#if LEDOMATIC_FORK
+#ifndef LEDOMATIC_NO_FORK
     // Process id and session id for the daemon
     pid_t pid, sid;
 
@@ -288,7 +303,7 @@ int main() {
     }
     LEDOMATIC_LOG("----------------------------------------------\n");
 
-#if LEDOMATIC_FORK
+#ifndef LEDOMATIC_NO_FORK
     // ----------------------------------------------------------------------
     // Create a new SID for the child process
     sid = setsid();
@@ -329,7 +344,20 @@ int main() {
 #endif
 
     // ----------------------------------------------------------------------
+    // Initialize the mutex
+    if (pthread_mutex_init(&ledomatic_lock, NULL) != 0) {
+        LEDOMATIC_LOG("ERROR Initializing mutex. Exiting. %s\n", strerror(errno));
+        fclose(ledomatic_logfp);
+        exit(EXIT_FAILURE);
+    }
+    LEDOMATIC_LOG("Initialized mutext\n");
+
+    // ----------------------------------------------------------------------
     // Create a matrix
+    uint8_t ledomatic_display_buffer[
+                    LEDOMATIC_MATRIX_HEIGHT *
+                    LEDOMATIC_MATRIX_ROW_WIDTH];
+
     ledomatic_matrix = kulm_mat_create(
                             ledomatic_display_buffer,
                             LEDOMATIC_MATRIX_WIDTH,
@@ -358,7 +386,11 @@ int main() {
     // ----------------------------------------------------------------------
     // Matrix scanner thread
     pthread_t matrix_scanner_tid;
+#ifdef NON_GPIO_MACHINE
+    int rc2 = pthread_create(&matrix_scanner_tid, NULL, matrix_dumper, NULL);
+#else
     int rc2 = pthread_create(&matrix_scanner_tid, NULL, matrix_scanner, NULL);
+#endif
     if (rc2) {
         LEDOMATIC_LOG("ERROR: in create of Matrix scanner thread: %d\n", rc2);
         fclose(ledomatic_logfp);
@@ -383,9 +415,11 @@ int main() {
     // ----------------------------------------------------------------------
     // Clean up and exit
     kulm_mat_destroy(ledomatic_matrix);
+#ifndef LEDOMATIC_NO_FORK
     if (unlink(LEDOMATIC_PID_FILE) == -1) {
         LEDOMATIC_LOG("%s\n", strerror(errno));
     }
+#endif
 
     LEDOMATIC_LOG("Main exit\n");
     fclose(ledomatic_logfp);
