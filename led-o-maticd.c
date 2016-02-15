@@ -18,7 +18,7 @@
 
 #include <kulm_matrix.h>
 #include <kulm_segment.h>
-#include <konker_hexfont_basic.h>
+#include <hexfont_iso-8859-15.h>
 
 #define LEDOMATIC_LOG_FILE "/var/log/led-o-maticd.log"
 #define LEDOMATIC_PID_FILE "/var/run/led-o-maticd.pid"
@@ -26,7 +26,7 @@
 #define LEDOMATIC_UDP_PORT "7890"
 #define LEDOMATIC_MAXBUFLEN 100
 
-#define LEDOMATIC_MATRIX_WIDTH 64
+#define LEDOMATIC_MATRIX_WIDTH 32
 #define LEDOMATIC_MATRIX_HEIGHT 16
 #define LEDOMATIC_MATRIX_ROW_WIDTH (LEDOMATIC_MATRIX_WIDTH / 8)
 
@@ -133,14 +133,13 @@ static void handle_command(char *buf) {
         LEDOMATIC_LOG("UDP listener: [on]\n");
         kulm_mat_on(ledomatic_matrix);
     }
-    /*[XXX: segment needed]
     else if (strcasecmp(buf, LEDOMATIC_CMD_REVERSE) == 0) {
         LEDOMATIC_LOG("UDP listener: [reverse]\n");
         kulm_mat_reverse(ledomatic_matrix);
     }
-    */
     else if (strcasecmp(buf, LEDOMATIC_CMD_CLEAR) == 0) {
         LEDOMATIC_LOG("UDP listener: [clear]\n");
+        kulm_mat_simple_set_text(ledomatic_matrix, "");
         kulm_mat_clear(ledomatic_matrix);
     }
     else if (sscanf(buf, LEDOMATIC_CMD_TEXT, str) == 1) {
@@ -355,8 +354,7 @@ int main() {
     // ----------------------------------------------------------------------
     // Create a matrix
     uint8_t ledomatic_display_buffer[
-                    LEDOMATIC_MATRIX_HEIGHT *
-                    LEDOMATIC_MATRIX_ROW_WIDTH];
+                KULM_BUFFER_LEN(LEDOMATIC_MATRIX_WIDTH, LEDOMATIC_MATRIX_HEIGHT)];
 
     ledomatic_matrix = kulm_mat_create(
                             ledomatic_display_buffer,
@@ -366,7 +364,7 @@ int main() {
 
     // ----------------------------------------------------------------------
     // Initialize some font(s)
-    hexfont * const font1 = hexfont_load_data(konker_hexfont_basic, 16);
+    hexfont * const font1 = hexfont_load_data(hexfont_iso_8859_15, 16);
 
     // ----------------------------------------------------------------------
     // Initialize the matrix
