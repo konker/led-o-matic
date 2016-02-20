@@ -24,11 +24,19 @@
 #define LEDOMATIC_PID_FILE "/var/run/led-o-maticd.pid"
 
 #define LEDOMATIC_UDP_PORT "7890"
-#define LEDOMATIC_MAXBUFLEN 100
+#define LEDOMATIC_MAXBUFLEN 1024
+#define LEDOMATIC_MAIN_LOOP_PERIOD_NANOS 10000000
+#define LEDOMATIC_ONE_MILLION 1000000
+#define LEDOMATIC_ONE_THOUSAND 1000
 
-#define LEDOMATIC_MATRIX_WIDTH 32
+#define LEDOMATIC_MATRIX_WIDTH 64
 #define LEDOMATIC_MATRIX_HEIGHT 16
 #define LEDOMATIC_MATRIX_ROW_WIDTH (LEDOMATIC_MATRIX_WIDTH / 8)
+
+#define LEDOMATIC_NOW_MICROSECS(var, time_spec_var) \
+        clock_gettime(CLOCK_REALTIME, &time_spec_var); \
+        var =  time_spec_var.tv_sec * LEDOMATIC_ONE_MILLION; \
+        var += time_spec_var.tv_nsec / LEDOMATIC_ONE_THOUSAND; \
 
 // Clean up and exit daemon
 #define LEDOMATIC_CMD_EXIT "exit"
@@ -78,11 +86,13 @@ static void signal_handler(int signum) {
 #ifndef NON_GPIO_MACHINE
 static void *matrix_scanner() {
     LEDOMATIC_LOG("Matrix scanner: starting\n");
+
     while (ledomatic_running) {
         pthread_mutex_lock(&ledomatic_lock);
         kulm_mat_scan(ledomatic_matrix);
         pthread_mutex_unlock(&ledomatic_lock);
     }
+
     LEDOMATIC_LOG("Matrix scanner: exiting\n");
     pthread_exit(NULL);
     return NULL;
@@ -243,12 +253,25 @@ static void * udp_listener() {
 static void main_loop() {
     struct timespec delay_t;
     delay_t.tv_sec = 0;
-    delay_t.tv_nsec = 100000; // 100ms
+    delay_t.tv_nsec = 0;
+
+    struct timespec now_t;
+    int64_t micros_0, micros_1;
 
     while (ledomatic_running) {
+        LEDOMATIC_NOW_MICROSECS(micros_0, now_t)
+
         pthread_mutex_lock(&ledomatic_lock);
         kulm_mat_tick(ledomatic_matrix);
         pthread_mutex_unlock(&ledomatic_lock);
+
+        LEDOMATIC_NOW_MICROSECS(micros_1, now_t)
+
+        // Delay to make loop time consistent
+        delay_t.tv_nsec =
+            LEDOMATIC_MAIN_LOOP_PERIOD_NANOS
+                - ((micros_1 - micros_0) * LEDOMATIC_ONE_THOUSAND);
+
         nanosleep(&delay_t, NULL);
     }
 }
@@ -360,7 +383,7 @@ int main() {
                             ledomatic_display_buffer,
                             LEDOMATIC_MATRIX_WIDTH,
                             LEDOMATIC_MATRIX_HEIGHT,
-                            0, 2, 3, 12, 13, 14, 21, 22);
+                            0, 2, 3, 12, 1, 14, 21, 22);
 
     // ----------------------------------------------------------------------
     // Initialize some font(s)
