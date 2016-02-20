@@ -376,11 +376,14 @@ int main() {
 
     // ----------------------------------------------------------------------
     // Create a matrix
-    uint8_t ledomatic_display_buffer[
+    uint8_t ledomatic_display_buffer0[
+                KULM_BUFFER_LEN(LEDOMATIC_MATRIX_WIDTH, LEDOMATIC_MATRIX_HEIGHT)];
+    uint8_t ledomatic_display_buffer1[
                 KULM_BUFFER_LEN(LEDOMATIC_MATRIX_WIDTH, LEDOMATIC_MATRIX_HEIGHT)];
 
     ledomatic_matrix = kulm_mat_create(
-                            ledomatic_display_buffer,
+                            ledomatic_display_buffer0,
+                            ledomatic_display_buffer1,
                             LEDOMATIC_MATRIX_WIDTH,
                             LEDOMATIC_MATRIX_HEIGHT,
                             0, 2, 3, 12, 1, 14, 21, 22);
