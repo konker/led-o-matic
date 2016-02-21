@@ -59,6 +59,8 @@
 #define LEDOMATIC_CMD_TEXT "text:%" LEDOMATIC_TOSTRING(KULM_TEXT_LEN) "[^\t\n]"
 // Set text1 scroll speed
 #define LEDOMATIC_CMD_SPEED "speed:%f"
+// Set text1 position
+#define LEDOMATIC_CMD_POSITION "position:%f"
 
 #define LEDOMATIC_LOG(...) fprintf(ledomatic_logfp, __VA_ARGS__); \
                            fflush(ledomatic_logfp);
@@ -157,6 +159,10 @@ static void handle_command(char *buf) {
     else if (sscanf(buf, LEDOMATIC_CMD_SPEED, &num) == 1) {
         LEDOMATIC_LOG("UDP listener: [speed => %f]\n", num);
         kulm_mat_simple_set_text_speed(ledomatic_matrix, num);
+    }
+    else if (sscanf(buf, LEDOMATIC_CMD_POSITION, &num) == 1) {
+        LEDOMATIC_LOG("UDP listener: [position => %f]\n", num);
+        kulm_mat_simple_set_text_position(ledomatic_matrix, num);
     }
     else {
         LEDOMATIC_LOG("UDP listener: [unknown]\n");
