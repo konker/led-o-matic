@@ -100,7 +100,7 @@ static void *matrix_scanner() {
 static void *matrix_dumper() {
     LEDOMATIC_LOG("Matrix dumper: starting\n");
     while (ledomatic_running) {
-        kulm_mat_dump_buffer(ledomatic_matrix, stdout);
+        kulm_mat_dump_buffer(ledomatic_matrix);
 
         sleep(1);
     }
@@ -366,6 +366,7 @@ int main() {
                 KULM_BUFFER_LEN(LEDOMATIC_MATRIX_WIDTH, LEDOMATIC_MATRIX_HEIGHT)];
 
     ledomatic_matrix = kulm_mat_create(
+                            ledomatic_logfp,
                             ledomatic_display_buffer0,
                             ledomatic_display_buffer1,
                             LEDOMATIC_MATRIX_WIDTH,
