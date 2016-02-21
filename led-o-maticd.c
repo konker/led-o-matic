@@ -38,6 +38,9 @@
         var =  time_spec_var.tv_sec * LEDOMATIC_ONE_MILLION; \
         var += time_spec_var.tv_nsec / LEDOMATIC_ONE_THOUSAND; \
 
+#define LEDOMATIC_STRINGIFY(x) #x
+#define LEDOMATIC_TOSTRING(x) LEDOMATIC_STRINGIFY(x)
+
 // Clean up and exit daemon
 #define LEDOMATIC_CMD_EXIT "exit"
 // Stop all scrolling
@@ -53,7 +56,7 @@
 // Clear the display
 #define LEDOMATIC_CMD_CLEAR "clear"
 // Set text1
-#define LEDOMATIC_CMD_TEXT "text:%[^\t\n]"
+#define LEDOMATIC_CMD_TEXT "text:%" LEDOMATIC_TOSTRING(KULM_TEXT_LEN) "[^\t\n]"
 // Set text1 scroll speed
 #define LEDOMATIC_CMD_SPEED "speed:%f"
 
