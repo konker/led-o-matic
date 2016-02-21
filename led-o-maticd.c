@@ -83,7 +83,7 @@ static void signal_handler(int signum) {
   Main matrix scan thread function
   [TODO: comment]
 */
-#ifndef NON_GPIO_MACHINE
+#ifndef KULM_NON_GPIO_MACHINE
 static void *matrix_scanner() {
     LEDOMATIC_LOG("Matrix scanner: starting\n");
 
@@ -99,7 +99,7 @@ static void *matrix_scanner() {
 }
 #endif
 
-#ifdef NON_GPIO_MACHINE
+#ifdef KULM_NON_GPIO_MACHINE
 static void *matrix_dumper() {
     LEDOMATIC_LOG("Matrix dumper: starting\n");
     while (ledomatic_running) {
@@ -357,7 +357,7 @@ int main() {
 
     // ----------------------------------------------------------------------
     // Initialize WirinPi if necessary
-#ifndef NON_GPIO_MACHINE
+#ifndef KULM_NON_GPIO_MACHINE
     if (wiringPiSetup()) {
         LEDOMATIC_LOG("ERROR Initializing WiringPi. Exiting. %s\n", strerror(errno));
         fclose(ledomatic_logfp);
@@ -410,7 +410,7 @@ int main() {
     // ----------------------------------------------------------------------
     // Matrix scanner thread
     pthread_t matrix_scanner_tid;
-#ifdef NON_GPIO_MACHINE
+#ifdef KULM_NON_GPIO_MACHINE
     int rc2 = pthread_create(&matrix_scanner_tid, NULL, matrix_dumper, NULL);
 #else
     int rc2 = pthread_create(&matrix_scanner_tid, NULL, matrix_scanner, NULL);
