@@ -65,7 +65,6 @@ static FILE *ledomatic_logfp;
 volatile static bool ledomatic_running;
 
 static kulm_matrix *ledomatic_matrix;
-static pthread_mutex_t ledomatic_lock;
 
 
 /**
@@ -88,9 +87,7 @@ static void *matrix_scanner() {
     LEDOMATIC_LOG("Matrix scanner: starting\n");
 
     while (ledomatic_running) {
-        pthread_mutex_lock(&ledomatic_lock);
         kulm_mat_scan(ledomatic_matrix);
-        pthread_mutex_unlock(&ledomatic_lock);
     }
 
     LEDOMATIC_LOG("Matrix scanner: exiting\n");
@@ -103,9 +100,7 @@ static void *matrix_scanner() {
 static void *matrix_dumper() {
     LEDOMATIC_LOG("Matrix dumper: starting\n");
     while (ledomatic_running) {
-        pthread_mutex_lock(&ledomatic_lock);
         kulm_mat_dump_buffer(ledomatic_matrix, stdout);
-        pthread_mutex_unlock(&ledomatic_lock);
 
         sleep(1);
     }
@@ -261,9 +256,7 @@ static void main_loop() {
     while (ledomatic_running) {
         LEDOMATIC_NOW_MICROSECS(micros_0, now_t)
 
-        pthread_mutex_lock(&ledomatic_lock);
         kulm_mat_tick(ledomatic_matrix);
-        pthread_mutex_unlock(&ledomatic_lock);
 
         LEDOMATIC_NOW_MICROSECS(micros_1, now_t)
 
@@ -364,15 +357,6 @@ int main() {
         exit(EXIT_FAILURE);
     }
 #endif
-
-    // ----------------------------------------------------------------------
-    // Initialize the mutex
-    if (pthread_mutex_init(&ledomatic_lock, NULL) != 0) {
-        LEDOMATIC_LOG("ERROR Initializing mutex. Exiting. %s\n", strerror(errno));
-        fclose(ledomatic_logfp);
-        exit(EXIT_FAILURE);
-    }
-    LEDOMATIC_LOG("Initialized mutext\n");
 
     // ----------------------------------------------------------------------
     // Create a matrix
