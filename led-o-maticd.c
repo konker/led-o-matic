@@ -145,7 +145,7 @@ static void handle_command(char *buf) {
     }
     else if (strcasecmp(buf, LEDOMATIC_CMD_REVERSE) == 0) {
         LEDOMATIC_LOG("UDP listener: [reverse]\n");
-        kulm_mat_reverse(ledomatic_matrix);
+        kulm_mat_simple_reverse(ledomatic_matrix);
     }
     else if (strcasecmp(buf, LEDOMATIC_CMD_CLEAR) == 0) {
         LEDOMATIC_LOG("UDP listener: [clear]\n");
