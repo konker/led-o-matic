@@ -129,11 +129,11 @@ static void handle_command(char *buf) {
     }
     else if (strcasecmp(buf, LEDOMATIC_CMD_STOP) == 0) {
         LEDOMATIC_LOG("UDP listener: [stop]\n");
-        kulm_mat_stop(ledomatic_matrix);
+        kulm_mat_simple_stop(ledomatic_matrix);
     }
     else if (strcasecmp(buf, LEDOMATIC_CMD_START) == 0) {
         LEDOMATIC_LOG("UDP listener: [start]\n");
-        kulm_mat_start(ledomatic_matrix);
+        kulm_mat_simple_start(ledomatic_matrix);
     }
     else if (strcasecmp(buf, LEDOMATIC_CMD_OFF) == 0) {
         LEDOMATIC_LOG("UDP listener: [off]\n");
