@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <errno.h>
+#include <ctype.h>
 #include <string.h>
 #include <strings.h>
 #include <fcntl.h>
@@ -20,8 +21,11 @@
 #include <kulm_segment.h>
 #include <hexfont_iso-8859-15.h>
 
-#define LEDOMATIC_LOG_FILE "/var/log/led-o-maticd.log"
-#define LEDOMATIC_PID_FILE "/var/run/led-o-maticd.pid"
+#define LEDOMATIC_USAGE "led-o-maticd -c <config file> [-l <log file>] [-p <pid file>] [-h]\n"
+
+#define LEDOMATIC_DEFAULT_CONFIG_FILE "/etc/led-o-maticd.ini"
+#define LEDOMATIC_DEFAULT_LOG_FILE "/var/log/led-o-maticd.log"
+#define LEDOMATIC_DEFAULT_PID_FILE "/var/run/led-o-maticd.pid"
 
 #define LEDOMATIC_UDP_PORT "7890"
 #define LEDOMATIC_MAXBUFLEN 1024
@@ -278,8 +282,64 @@ static void main_loop() {
     }
 }
 
-int main() {
+int main(int argc, char **argv) {
+    // ----------------------------------------------------------------------
+    // Parse command line arguments
+    char *config_file = LEDOMATIC_DEFAULT_CONFIG_FILE;
+    char *log_file = LEDOMATIC_DEFAULT_LOG_FILE;
+    char *pid_file = LEDOMATIC_DEFAULT_PID_FILE;
+    int c;
+
+    opterr = 0;
+    while ((c = getopt(argc, argv, "hc:l:p:")) != -1) {
+        switch (c) {
+            case 'h':
+                fprintf(stdout, LEDOMATIC_USAGE);
+                exit(EXIT_SUCCESS);
+
+            case 'c':
+                config_file = optarg;
+                break;
+
+            case '?':
+                if (optopt == 'c') {
+                    fprintf(stderr, "Option -%c requires an argument.\n", optopt);
+                }
+                else if (isprint(optopt)) {
+                    fprintf(stderr, "Unknown option `-%c'.\n", optopt);
+                }
+                else {
+                    fprintf(stderr,
+                           "Unknown option character `\\x%x'.\n",
+                           optopt);
+                }
+                return 1;
+
+            default:
+                exit(EXIT_FAILURE);
+        }
+    }
+    fprintf(stderr, "Log file: %s\n", log_file);
+    fprintf(stderr, "PID file: %s\n", pid_file);
+
+    // ----------------------------------------------------------------------
+    // Initialize log
+    ledomatic_logfp = fopen(log_file, "a");
+    if (ledomatic_logfp == 0) {
+        fprintf(stderr, "Could not open log file: %s\n", log_file);
+        exit(EXIT_FAILURE);
+    }
+    LEDOMATIC_LOG("----------------------------------------------\n");
+    LEDOMATIC_LOG("Log file: %s\n", log_file);
+    LEDOMATIC_LOG("PID file: %s\n", pid_file);
+    LEDOMATIC_LOG("Config file: %s\n", config_file);
+
+    // ----------------------------------------------------------------------
+    // Parse the config file
+    //[TODO]
+
 #ifndef LEDOMATIC_NO_FORK
+    // ----------------------------------------------------------------------
     // Process id and session id for the daemon
     pid_t pid, sid;
 
@@ -299,9 +359,9 @@ int main() {
 
         // ----------------------------------------------------------------------
         // Create PID file
-        pidfp = fopen(LEDOMATIC_PID_FILE, "w");
+        pidfp = fopen(pid_file, "w");
         if (pidfp == NULL) {
-            fprintf(stderr, "Could not open PID file: %s\n", LEDOMATIC_PID_FILE);
+            fprintf(stderr, "Could not open PID file: %s\n", pid_file);
             exit(EXIT_FAILURE);
         }
 
@@ -316,18 +376,7 @@ int main() {
     // ----------------------------------------------------------------------
     // Change the file mask mode
     umask(0);
-#endif
 
-    // ----------------------------------------------------------------------
-    // Initialize log
-    ledomatic_logfp = fopen(LEDOMATIC_LOG_FILE, "a");
-    if (ledomatic_logfp == 0) {
-        fprintf(stderr, "Could not open log file: %s\n", LEDOMATIC_LOG_FILE);
-        exit(EXIT_FAILURE);
-    }
-    LEDOMATIC_LOG("----------------------------------------------\n");
-
-#ifndef LEDOMATIC_NO_FORK
     // ----------------------------------------------------------------------
     // Create a new SID for the child process
     sid = setsid();
@@ -434,7 +483,7 @@ int main() {
     // Clean up and exit
     kulm_mat_destroy(ledomatic_matrix);
 #ifndef LEDOMATIC_NO_FORK
-    if (unlink(LEDOMATIC_PID_FILE) == -1) {
+    if (unlink(pid_file) == -1) {
         LEDOMATIC_LOG("%s\n", strerror(errno));
     }
 #endif
