@@ -16,6 +16,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <ini.h>
 
 #include <kulm_matrix.h>
 #include <kulm_segment.h>
@@ -23,19 +24,18 @@
 
 #define LEDOMATIC_USAGE "led-o-maticd -c <config file> [-l <log file>] [-p <pid file>] [-h]\n"
 
-#define LEDOMATIC_DEFAULT_CONFIG_FILE "/etc/led-o-maticd.ini"
+#define LEDOMATIC_DEFAULT_CONFIG_FILE "led-o-matic.ini"
 #define LEDOMATIC_DEFAULT_LOG_FILE "/var/log/led-o-maticd.log"
 #define LEDOMATIC_DEFAULT_PID_FILE "/var/run/led-o-maticd.pid"
 
-#define LEDOMATIC_UDP_PORT "7890"
+#define LEDOMATIC_DEFAULT_UDP_PORT "7890"
 #define LEDOMATIC_MAXBUFLEN 1024
 #define LEDOMATIC_MAIN_LOOP_PERIOD_NANOS 10000000
 #define LEDOMATIC_ONE_MILLION 1000000
 #define LEDOMATIC_ONE_THOUSAND 1000
 
-#define LEDOMATIC_MATRIX_WIDTH 64
-#define LEDOMATIC_MATRIX_HEIGHT 16
-#define LEDOMATIC_MATRIX_ROW_WIDTH (LEDOMATIC_MATRIX_WIDTH / 8)
+#define LEDOMATIC_DEFAULT_MATRIX_WIDTH 32
+#define LEDOMATIC_DEFAULT_MATRIX_HEIGHT 16
 
 #define LEDOMATIC_NOW_MICROSECS(var, time_spec_var) \
         clock_gettime(CLOCK_REALTIME, &time_spec_var); \
@@ -121,6 +121,34 @@ static void *matrix_dumper() {
 
 /**
   // ----------------------------------------------------------------------
+  Config file handler
+*/
+typedef struct ledomatic_config {
+    uint16_t matrix_width;
+    uint16_t matrix_height;
+
+} ledomatic_config;
+
+static int config_handler(void* user, const char* section,
+                          const char* name, const char* value)
+{
+    ledomatic_config* config = (ledomatic_config*)user;
+
+    #define MATCH(s, n) strcmp(section, s) == 0 && strcmp(name, n) == 0
+    if (MATCH("matrix", "width")) {
+        config->matrix_width = atoi(value);
+    }
+    else if (MATCH("matrix", "height")) {
+        config->matrix_height = atoi(value);
+    }
+    else {
+        LEDOMATIC_LOG("Warning: Unknown config item: %s, %s\n", section, name);
+    }
+    return 1;
+}
+
+/**
+  // ----------------------------------------------------------------------
   Handle commands received via UDP socket
   [TODO: comment]
 */
@@ -180,7 +208,7 @@ static void handle_command(char *buf) {
   [TODO: comment]
 */
 static void * udp_listener() {
-    LEDOMATIC_LOG("UDP listener: port [%s]: starting...\n", LEDOMATIC_UDP_PORT);
+    LEDOMATIC_LOG("UDP listener: port [%s]: starting...\n", LEDOMATIC_DEFAULT_UDP_PORT);
     struct addrinfo hints, *servinfo, *p;
     int rv;
     int numbytes;
@@ -193,7 +221,7 @@ static void * udp_listener() {
     hints.ai_socktype = SOCK_DGRAM;
     hints.ai_flags = AI_PASSIVE | AI_ADDRCONFIG; // use my IP
 
-    if ((rv = getaddrinfo(NULL, LEDOMATIC_UDP_PORT, &hints, &servinfo)) != 0) {
+    if ((rv = getaddrinfo(NULL, LEDOMATIC_DEFAULT_UDP_PORT, &hints, &servinfo)) != 0) {
         LEDOMATIC_LOG("UDP listener: Error: getaddrinfo: %s\n", gai_strerror(rv));
         fclose(ledomatic_logfp);
         exit(EXIT_FAILURE);
@@ -301,6 +329,14 @@ int main(int argc, char **argv) {
                 config_file = optarg;
                 break;
 
+            case 'l':
+                log_file = optarg;
+                break;
+
+            case 'p':
+                pid_file = optarg;
+                break;
+
             case '?':
                 if (optopt == 'c') {
                     fprintf(stderr, "Option -%c requires an argument.\n", optopt);
@@ -310,8 +346,8 @@ int main(int argc, char **argv) {
                 }
                 else {
                     fprintf(stderr,
-                           "Unknown option character `\\x%x'.\n",
-                           optopt);
+                            "Unknown option character `\\x%x'.\n",
+                            optopt);
                 }
                 return 1;
 
@@ -337,6 +373,15 @@ int main(int argc, char **argv) {
     // ----------------------------------------------------------------------
     // Parse the config file
     //[TODO]
+    ledomatic_config config;
+
+    if (ini_parse(config_file, config_handler, &config) < 0) {
+        LEDOMATIC_LOG("Can't load config file %s. Aborting\n", config_file);
+        fclose(ledomatic_logfp);
+        exit(EXIT_FAILURE);
+    }
+    LEDOMATIC_LOG("Config loaded from '%s': matrix_width=%d, matrix_height=%d\n",
+                  config_file, config.matrix_width, config.matrix_height);
 
 #ifndef LEDOMATIC_NO_FORK
     // ----------------------------------------------------------------------
@@ -350,18 +395,20 @@ int main(int argc, char **argv) {
     // Fork a process
     pid = fork();
     if (pid < 0) {
-        fprintf(stderr, "Could not fork: %d\n", pid);
+        LEDOMATIC_LOG("Could not fork: %d\n", pid);
+        fclose(ledomatic_logfp);
         exit(EXIT_FAILURE);
     }
 
     if (pid > 0) {
-        fprintf(stderr, "Forked PID: %d\n", pid);
+        LEDOMATIC_LOG("Forked PID: %d\n", pid);
 
         // ----------------------------------------------------------------------
         // Create PID file
         pidfp = fopen(pid_file, "w");
         if (pidfp == NULL) {
-            fprintf(stderr, "Could not open PID file: %s\n", pid_file);
+            LEDOMATIC_LOG("Could not open PID file: %s\n", pid_file);
+            fclose(ledomatic_logfp);
             exit(EXIT_FAILURE);
         }
 
@@ -419,16 +466,16 @@ int main(int argc, char **argv) {
     // ----------------------------------------------------------------------
     // Create a matrix
     uint8_t ledomatic_display_buffer0[
-                KULM_BUFFER_LEN(LEDOMATIC_MATRIX_WIDTH, LEDOMATIC_MATRIX_HEIGHT)];
+                KULM_BUFFER_LEN(LEDOMATIC_DEFAULT_MATRIX_WIDTH, LEDOMATIC_DEFAULT_MATRIX_HEIGHT)];
     uint8_t ledomatic_display_buffer1[
-                KULM_BUFFER_LEN(LEDOMATIC_MATRIX_WIDTH, LEDOMATIC_MATRIX_HEIGHT)];
+                KULM_BUFFER_LEN(LEDOMATIC_DEFAULT_MATRIX_WIDTH, LEDOMATIC_DEFAULT_MATRIX_HEIGHT)];
 
     ledomatic_matrix = kulm_mat_create(
                             ledomatic_logfp,
                             ledomatic_display_buffer0,
                             ledomatic_display_buffer1,
-                            LEDOMATIC_MATRIX_WIDTH,
-                            LEDOMATIC_MATRIX_HEIGHT,
+                            LEDOMATIC_DEFAULT_MATRIX_WIDTH,
+                            LEDOMATIC_DEFAULT_MATRIX_HEIGHT,
                             0, 2, 3, 12, 1, 14, 21, 22);
 
     // ----------------------------------------------------------------------
