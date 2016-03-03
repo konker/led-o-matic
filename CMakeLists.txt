@@ -42,6 +42,7 @@ if(NOT INIH_DIR)
 endif()
 
 include_directories(include)
+
 include_directories(${HEXFONT_DIR}/include)
 include_directories(${TINYUTF8_DIR}/include)
 include_directories(${KLM_DIR}/include)
@@ -52,11 +53,11 @@ link_directories(${TINYUTF8_DIR}/build)
 link_directories(${KLM_DIR}/build)
 link_directories(${INIH_DIR}/build)
 
-file(GLOB SOURCES "src/*.c")
-
 if(LEDOMATIC_NO_FORK)
     add_definitions(-DLEDOMATIC_NO_FORK)
 endif()
+
+file(GLOB SOURCES "src/*.c")
 
 add_executable(led-o-maticd ${SOURCES})
 target_link_libraries(led-o-maticd klm ${KLM_DRIVER} hexfont tinyutf8 inih pthread)
