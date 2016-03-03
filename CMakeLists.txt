@@ -3,7 +3,6 @@ project("LED-O-Matic LED Matrix Driver Daemon")
 set(CMAKE_BUILD_TYPE Debug)
 
 option(KLM_DRIVER "Which LED panel specific driver to use" OFF)
-option(KLM_NON_GPIO_MACHINE "Build target is a non-GPIO machine such a laptop" OFF)
 option(LEDOMATIC_NO_FORK "Led-o-maticd will not fork and run as a deamon" OFF)
 
 if(NOT KLM_DRIVER)
@@ -24,10 +23,6 @@ link_directories(${CMAKE_SOURCE_DIR}/../hexfont/build)
 link_directories(${CMAKE_SOURCE_DIR}/../tinyutf8/build)
 
 file(GLOB SOURCES "src/*.c")
-
-if(KLM_NON_GPIO_MACHINE)
-    add_definitions(-DKLM_NON_GPIO_MACHINE)
-endif()
 
 if(LEDOMATIC_NO_FORK)
     add_definitions(-DLEDOMATIC_NO_FORK)

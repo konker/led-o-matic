@@ -91,7 +91,6 @@ static void signal_handler(int signum) {
   Main matrix scan thread function
   [TODO: comment]
 */
-#ifndef KLM_NON_GPIO_MACHINE
 static void *matrix_scanner() {
     LEDOMATIC_LOG("Matrix scanner: starting\n");
 
@@ -103,21 +102,6 @@ static void *matrix_scanner() {
     pthread_exit(NULL);
     return NULL;
 }
-#endif
-
-#ifdef KLM_NON_GPIO_MACHINE
-static void *matrix_dumper() {
-    LEDOMATIC_LOG("Matrix dumper: starting\n");
-    while (ledomatic_running) {
-        klm_mat_dump_buffer(ledomatic_matrix);
-
-        sleep(1);
-    }
-    LEDOMATIC_LOG("Matrix dumper: exiting\n");
-    pthread_exit(NULL);
-    return NULL;
-}
-#endif
 
 /**
   // ----------------------------------------------------------------------
@@ -454,14 +438,8 @@ int main(int argc, char **argv) {
     signal(SIGINT, signal_handler);
 
     // ----------------------------------------------------------------------
-    // Initialize WirinPi if necessary
-#ifndef KLM_NON_GPIO_MACHINE
-    if (wiringPiSetup()) {
-        LEDOMATIC_LOG("ERROR Initializing WiringPi. Exiting. %s\n", strerror(errno));
-        fclose(ledomatic_logfp);
-        exit(EXIT_FAILURE);
-    }
-#endif
+    // Initialize matrix system
+    klm_mat_begin();
 
     // ----------------------------------------------------------------------
     // Create a matrix
@@ -500,11 +478,7 @@ int main(int argc, char **argv) {
     // ----------------------------------------------------------------------
     // Matrix scanner thread
     pthread_t matrix_scanner_tid;
-#ifdef KLM_NON_GPIO_MACHINE
-    int rc2 = pthread_create(&matrix_scanner_tid, NULL, matrix_dumper, NULL);
-#else
     int rc2 = pthread_create(&matrix_scanner_tid, NULL, matrix_scanner, NULL);
-#endif
     if (rc2) {
         LEDOMATIC_LOG("ERROR: in create of Matrix scanner thread: %d\n", rc2);
         fclose(ledomatic_logfp);
