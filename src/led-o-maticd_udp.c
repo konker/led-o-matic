@@ -15,8 +15,6 @@
 #include "led-o-maticd_command.h"
 
 
-#define LEDOMATIC_DEFAULT_UDP_PORT "7890"
-
 /**
   // ----------------------------------------------------------------------
   UDP listener
@@ -25,8 +23,8 @@
 */
 void * ledomatic_udp_listener_thread(void *arg) {
     ledomaticd *lomd = arg;
-    LEDOMATIC_LOG(*lomd, "UDP listener(%p): port [%s]: starting...\n",
-                  lomd, LEDOMATIC_DEFAULT_UDP_PORT);
+    LEDOMATIC_LOG(*lomd, "UDP listener(%p): host [%s] port [%s]: starting...\n",
+                  lomd, lomd->config.udp_host, lomd->config.udp_port);
 
     struct addrinfo hints, *servinfo, *p;
     int rv;
@@ -40,7 +38,7 @@ void * ledomatic_udp_listener_thread(void *arg) {
     hints.ai_socktype = SOCK_DGRAM;
     hints.ai_flags = AI_PASSIVE | AI_ADDRCONFIG; // use my IP
 
-    if ((rv = getaddrinfo(NULL, LEDOMATIC_DEFAULT_UDP_PORT, &hints, &servinfo)) != 0) {
+    if ((rv = getaddrinfo(lomd->config.udp_host, lomd->config.udp_port, &hints, &servinfo)) != 0) {
         LEDOMATIC_LOG(*lomd, "UDP listener: Error: getaddrinfo: %s\n", gai_strerror(rv));
         fclose(lomd->logfp);
         exit(EXIT_FAILURE);

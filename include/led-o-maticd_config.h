@@ -32,6 +32,11 @@ extern "C" {
 typedef struct ledomaticd ledomaticd;
 
 typedef struct {
+    // UDP listener
+    char *udp_host;
+    char *udp_port;
+
+    // matrix
     uint16_t matrix_width;
     uint16_t matrix_height;
     uint8_t a;

@@ -19,7 +19,13 @@ int ledomatic_config_handler(void* user, const char* section,
     ledomatic_config* config = (ledomatic_config*)user;
 
     #define MATCH(s, n) strcmp(section, s) == 0 && strcmp(name, n) == 0
-    if (MATCH("matrix", "width")) {
+    if (MATCH("udp", "host")) {
+        config->udp_host = strdup(value);
+    }
+    else if (MATCH("udp", "port")) {
+        config->udp_port = strdup(value);
+    }
+    else if (MATCH("matrix", "width")) {
         config->matrix_width = atoi(value);
     }
     else if (MATCH("matrix", "height")) {

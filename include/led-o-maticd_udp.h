@@ -24,6 +24,8 @@
 #ifndef __LEDOMATICD_UDP_H__
 #define __LEDOMATICD_UDP_H__
 
+#define LEDOMATIC_DEFAULT_UDP_PORT "7890"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
