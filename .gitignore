@@ -42,4 +42,5 @@ install_manifest.txt
 
 # Project specific
 local
+led-o-maticd.ini
 
