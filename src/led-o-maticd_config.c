@@ -25,6 +25,30 @@ int ledomatic_config_handler(void* user, const char* section,
     else if (MATCH("matrix", "height")) {
         config->matrix_height = atoi(value);
     }
+    if (MATCH("matrix", "a")) {
+        config->a = atoi(value);
+    }
+    if (MATCH("matrix", "b")) {
+        config->b = atoi(value);
+    }
+    if (MATCH("matrix", "c")) {
+        config->c = atoi(value);
+    }
+    if (MATCH("matrix", "d")) {
+        config->d = atoi(value);
+    }
+    if (MATCH("matrix", "oe")) {
+        config->oe = atoi(value);
+    }
+    if (MATCH("matrix", "r1")) {
+        config->r1 = atoi(value);
+    }
+    if (MATCH("matrix", "stb")) {
+        config->stb = atoi(value);
+    }
+    if (MATCH("matrix", "clk")) {
+        config->clk = atoi(value);
+    }
     else {
         //[FIXME] LEDOMATIC_LOG("Warning: Unknown config item: %s, %s\n", section, name);
     }
