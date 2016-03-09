@@ -55,7 +55,7 @@ static void main_loop(ledomaticd *lomd) {
     while (lomd->running) {
         LEDOMATIC_NOW_MICROSECS(micros_0, now_t)
 
-        klm_mat_tick(lomd->matrix);
+        klm_mat_tick_lock(lomd->matrix, &(lomd->scan_lock));
 
         LEDOMATIC_NOW_MICROSECS(micros_1, now_t)
 
@@ -72,6 +72,7 @@ int main(int argc, char **argv) {
     // ----------------------------------------------------------------------
     // Initialize ledomaticd structure
     lomd.running = true;
+    lomd.scan_lock = false;
 
     // ----------------------------------------------------------------------
     // Parse command line arguments

@@ -75,6 +75,9 @@ void *ledomatic_matrix_scanner_thread(void *arg) {
     LEDOMATIC_LOG(*lomd, "Matrix scanner: starting: %p\n", lomd);
 
     while (lomd->running) {
+        if (lomd->scan_lock) {
+            continue;
+        }
         klm_mat_scan(lomd->matrix);
     }
 
