@@ -15,19 +15,24 @@
   [TODO: comment]
 */
 void handle_command(ledomaticd * const lomd, char *buf) {
+    int seg;
     float num;
     char str[KLM_TEXT_LEN];
     if (strcasecmp(buf, LEDOMATIC_CMD_EXIT) == 0) {
         LEDOMATIC_LOG(*lomd, "UDP listener: [exit]\n");
         lomd->running = false;
     }
-    else if (strcasecmp(buf, LEDOMATIC_CMD_STOP) == 0) {
-        LEDOMATIC_LOG(*lomd, "UDP listener: [stop]\n");
-        klm_mat_simple_stop(lomd->matrix);
+    else if (strcasecmp(buf, LEDOMATIC_CMD_CLEAR) == 0) {
+        LEDOMATIC_LOG(*lomd, "UDP listener: [clear]\n");
+        klm_mat_clear(lomd->matrix);
     }
-    else if (strcasecmp(buf, LEDOMATIC_CMD_START) == 0) {
-        LEDOMATIC_LOG(*lomd, "UDP listener: [start]\n");
-        klm_mat_simple_start(lomd->matrix);
+    else if (sscanf(buf, LEDOMATIC_CMD_STOP, &seg) == 1) {
+        LEDOMATIC_LOG(*lomd, "UDP listener: [stop %d]\n", seg);
+        klm_seg_stop(klm_segment_list_get_nth(lomd->matrix->segment_list, seg));
+    }
+    else if (sscanf(buf, LEDOMATIC_CMD_START, &seg) == 1) {
+        LEDOMATIC_LOG(*lomd, "UDP listener: [start %d]\n", seg);
+        klm_seg_start(klm_segment_list_get_nth(lomd->matrix->segment_list, seg));
     }
     else if (strcasecmp(buf, LEDOMATIC_CMD_OFF) == 0) {
         LEDOMATIC_LOG(*lomd, "UDP listener: [off]\n");
@@ -37,26 +42,29 @@ void handle_command(ledomaticd * const lomd, char *buf) {
         LEDOMATIC_LOG(*lomd, "UDP listener: [on]\n");
         klm_mat_on(lomd->matrix);
     }
-    else if (strcasecmp(buf, LEDOMATIC_CMD_REVERSE) == 0) {
-        LEDOMATIC_LOG(*lomd, "UDP listener: [reverse]\n");
-        klm_mat_simple_reverse(lomd->matrix);
+    else if (sscanf(buf, LEDOMATIC_CMD_HIDE, &seg) == 1) {
+        LEDOMATIC_LOG(*lomd, "UDP listener: [hide %d]\n", seg);
+        klm_seg_hide(klm_segment_list_get_nth(lomd->matrix->segment_list, seg));
     }
-    else if (strcasecmp(buf, LEDOMATIC_CMD_CLEAR) == 0) {
-        LEDOMATIC_LOG(*lomd, "UDP listener: [clear]\n");
-        klm_mat_simple_set_text(lomd->matrix, "");
-        klm_mat_clear(lomd->matrix);
+    else if (sscanf(buf, LEDOMATIC_CMD_SHOW, &seg) == 1) {
+        LEDOMATIC_LOG(*lomd, "UDP listener: [show %d]\n", seg);
+        klm_seg_show(klm_segment_list_get_nth(lomd->matrix->segment_list, seg));
     }
-    else if (sscanf(buf, LEDOMATIC_CMD_TEXT, str) == 1) {
-        LEDOMATIC_LOG(*lomd, "UDP listener: [text => %s]\n", str);
-        klm_mat_simple_set_text(lomd->matrix, str);
+    else if (sscanf(buf, LEDOMATIC_CMD_REVERSE, &seg) == 1) {
+        LEDOMATIC_LOG(*lomd, "UDP listener: [reverse %d]\n", seg);
+        klm_seg_reverse(klm_segment_list_get_nth(lomd->matrix->segment_list, seg));
     }
-    else if (sscanf(buf, LEDOMATIC_CMD_SPEED, &num) == 1) {
-        LEDOMATIC_LOG(*lomd, "UDP listener: [speed => %f]\n", num);
-        klm_mat_simple_set_text_speed(lomd->matrix, num);
+    else if (sscanf(buf, LEDOMATIC_CMD_TEXT, &seg, str) == 2) {
+        LEDOMATIC_LOG(*lomd, "UDP listener: [text %d => %s]\n", seg, str);
+        klm_seg_set_text(klm_segment_list_get_nth(lomd->matrix->segment_list, seg), str);
     }
-    else if (sscanf(buf, LEDOMATIC_CMD_POSITION, &num) == 1) {
-        LEDOMATIC_LOG(*lomd, "UDP listener: [position => %f]\n", num);
-        klm_mat_simple_set_text_position(lomd->matrix, num);
+    else if (sscanf(buf, LEDOMATIC_CMD_SPEED, &seg, &num) == 2) {
+        LEDOMATIC_LOG(*lomd, "UDP listener: [speed %d => %f]\n", seg, num);
+        klm_seg_set_text_speed(klm_segment_list_get_nth(lomd->matrix->segment_list, seg), num);
+    }
+    else if (sscanf(buf, LEDOMATIC_CMD_POSITION, &seg, &num) == 2) {
+        LEDOMATIC_LOG(*lomd, "UDP listener: [position %d => %f]\n", seg, num);
+        klm_seg_set_text_position(klm_segment_list_get_nth(lomd->matrix->segment_list, seg), num);
     }
     else {
         LEDOMATIC_LOG(*lomd, "UDP listener: [unknown]\n");
