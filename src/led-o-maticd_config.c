@@ -40,6 +40,14 @@ int ledomatic_config_handler_p1(void* user, const char* section,
         }
         ledomatic_config_in_segment = true;
     }
+    else {
+        if (ledomatic_config_in_segment && ledomatic_config_segment_field_count != LEDOMATIC_CONFIG_NUM_SEGMENT_FIELDS) {
+            // Wrong number of fields in segment config, fatal error
+            //[FIXME] LEDOMATIC_LOG(????, "Fatal Error: Wrong number fields in segment config\n");
+            return -1;
+        }
+        ledomatic_config_in_segment = false;
+    }
 
     if (MATCH("segment", "x")) {
         ledomatic_config_segment_field_count++;
@@ -57,7 +65,7 @@ int ledomatic_config_handler_p1(void* user, const char* section,
         ledomatic_config_segment_field_count++;
     }
     else {
-        //[FIXME] LEDOMATIC_LOG("Warning: Unknown config item: %s, %s\n", section, name);
+        //[FIXME] LEDOMATIC_LOG(????, "Warning: Unknown config item: %s, %s\n", section, name);
     }
 
     if (ledomatic_config_segment_field_count == LEDOMATIC_CONFIG_NUM_SEGMENT_FIELDS) {
@@ -176,15 +184,17 @@ bool ledomatic_config_parse(ledomaticd * const lomd) {
     ledomatic_config_in_segment = false;
     ledomatic_config_segment_field_count = 0;
     ledomatic_config_num_fonts = 0;
-    lomd->config.num_segments = 0;
+    ledomatic_config_num_segments = 0;
+    ledomatic_config_cur_segment_index = 0;
+    ledomatic_config_cur_font_index = 0;
 
     if (ini_parse(lomd->args.config_file, &ledomatic_config_handler_p1, &lomd->config) < 0) {
         return false;
     }
     printf("Config first pass: fonts: %d, segments: %d\n",
-                  ledomatic_config_num_fonts, lomd->config.num_segments);
+                  ledomatic_config_num_fonts, ledomatic_config_num_segments);
     LEDOMATIC_LOG(*lomd, "Config first pass: fonts: %d, segments: %d\n",
-                  ledomatic_config_num_fonts, lomd->config.num_segments);
+                  ledomatic_config_num_fonts, ledomatic_config_num_segments);
 
     lomd->config.num_fonts = ledomatic_config_num_fonts;
     lomd->config.fonts =
