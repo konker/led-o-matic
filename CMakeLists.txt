@@ -57,6 +57,10 @@ if(LEDOMATIC_NO_FORK)
     add_definitions(-DLEDOMATIC_NO_FORK)
 endif()
 
+if(KLM_NON_GPIO_MACHINE)
+    add_definitions(-DKLM_NON_GPIO_MACHINE)
+endif()
+
 file(GLOB SOURCES "src/*.c")
 
 add_executable(led-o-maticd ${SOURCES})
