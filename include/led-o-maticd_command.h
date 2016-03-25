@@ -27,31 +27,6 @@
 #include "led-o-maticd.h"
 
 
-// Clean up and exit daemon
-#define LEDOMATIC_CMD_EXIT "exit"
-// Clear the display
-#define LEDOMATIC_CMD_CLEAR "clear"
-// Switch display off
-#define LEDOMATIC_CMD_OFF "off"
-// Switch display on
-#define LEDOMATIC_CMD_ON "on"
-// Stop scrolling a segment
-#define LEDOMATIC_CMD_STOP "stop:%d"
-// Resume scrolling a segment
-#define LEDOMATIC_CMD_START "start:%d"
-// Hide a segment
-#define LEDOMATIC_CMD_HIDE "hide:%d"
-// Show a segment
-#define LEDOMATIC_CMD_SHOW "show:%d"
-// Reverse display colors for a segment
-#define LEDOMATIC_CMD_REVERSE "reverse:%d"
-// Set the text for a segment
-#define LEDOMATIC_CMD_TEXT "text:%d:%" LEDOMATIC_TOSTRING(KLM_TEXT_LEN) "[^\t\n]"
-// Set scroll speed for a segment
-#define LEDOMATIC_CMD_SPEED "speed:%d:%f"
-// Set the text position for a segment
-#define LEDOMATIC_CMD_POSITION "position:%d:%f"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
