@@ -11,6 +11,7 @@
 
 #define LEDOMATIC_CONFIG_NUM_SEGMENT_FIELDS 5
 
+static ledomaticd *ledomatic_config_global_lomd;
 static ledomatic_config_segment ledomatic_config_cur_segment;
 static bool ledomatic_config_in_segment;
 static uint8_t ledomatic_config_segment_field_count;
@@ -43,7 +44,7 @@ int ledomatic_config_handler_p1(void* user, const char* section,
     else {
         if (ledomatic_config_in_segment && ledomatic_config_segment_field_count != LEDOMATIC_CONFIG_NUM_SEGMENT_FIELDS) {
             // Wrong number of fields in segment config, fatal error
-            //[FIXME] LEDOMATIC_LOG(????, "Fatal Error: Wrong number fields in segment config\n");
+            LEDOMATIC_LOG(*ledomatic_config_global_lomd, "Fatal Error: Wrong number fields in segment config\n");
             return -1;
         }
         ledomatic_config_in_segment = false;
@@ -65,7 +66,7 @@ int ledomatic_config_handler_p1(void* user, const char* section,
         ledomatic_config_segment_field_count++;
     }
     else {
-        //[FIXME] LEDOMATIC_LOG(????, "Warning: Unknown config item: %s, %s\n", section, name);
+        LEDOMATIC_LOG(*ledomatic_config_global_lomd, "Warning: Unknown config item: %s, %s\n", section, name);
     }
 
     if (ledomatic_config_segment_field_count == LEDOMATIC_CONFIG_NUM_SEGMENT_FIELDS) {
@@ -85,7 +86,6 @@ int ledomatic_config_handler_p2(void* user, const char* section,
     #define MATCH_SECTION(s) strcmp(section, s) == 0
     #define MATCH(s, n) strcmp(section, s) == 0 && strcmp(name, n) == 0
     if (MATCH_SECTION("font")) {
-printf("Got font(%d): %s\n", ledomatic_config_cur_font_index, value);
         config->fonts[ledomatic_config_cur_font_index] = strdup(value);
         ledomatic_config_cur_font_index++;
     }
@@ -159,18 +159,17 @@ printf("Got font(%d): %s\n", ledomatic_config_cur_font_index, value);
         config->clk = atoi(value);
     }
     else {
-        //[FIXME] LEDOMATIC_LOG("Warning: Unknown config item: %s, %s\n", section, name);
+        LEDOMATIC_LOG(*ledomatic_config_global_lomd, "Warning: Unknown config item: %s, %s\n", section, name);
     }
 
     if (ledomatic_config_segment_field_count == LEDOMATIC_CONFIG_NUM_SEGMENT_FIELDS) {
         // End of segment
-printf("Got segment(%d): %d, %d, %d, %d, %d\n",
         ledomatic_config_cur_segment_index,
         config->segment_configs[ledomatic_config_cur_segment_index].x,
         config->segment_configs[ledomatic_config_cur_segment_index].y,
         config->segment_configs[ledomatic_config_cur_segment_index].width,
         config->segment_configs[ledomatic_config_cur_segment_index].height,
-        config->segment_configs[ledomatic_config_cur_segment_index].font_index);
+        config->segment_configs[ledomatic_config_cur_segment_index].font_index;
 
         ledomatic_config_segment_field_count = 0;
         ledomatic_config_in_segment = false;
@@ -181,6 +180,7 @@ printf("Got segment(%d): %d, %d, %d, %d, %d\n",
 }
 
 bool ledomatic_config_parse(ledomaticd * const lomd) {
+    ledomatic_config_global_lomd = lomd;
     ledomatic_config_in_segment = false;
     ledomatic_config_segment_field_count = 0;
     ledomatic_config_num_fonts = 0;
@@ -191,8 +191,6 @@ bool ledomatic_config_parse(ledomaticd * const lomd) {
     if (ini_parse(lomd->args.config_file, &ledomatic_config_handler_p1, &lomd->config) < 0) {
         return false;
     }
-    printf("Config first pass: fonts: %d, segments: %d\n",
-                  ledomatic_config_num_fonts, ledomatic_config_num_segments);
     LEDOMATIC_LOG(*lomd, "Config first pass: fonts: %d, segments: %d\n",
                   ledomatic_config_num_fonts, ledomatic_config_num_segments);
 

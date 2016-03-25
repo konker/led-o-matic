@@ -70,9 +70,14 @@ bool ledomatic_matrix_init(ledomaticd * const lomd) {
                     lomd->config.segment_configs[i].height,
                     lomd->config.segment_configs[i].font_index);
 
+printf("Appending segment %p to list %p\n", segment, segment_list);
         // Add the segments to the segment list
         klm_segment_list_append(segment_list, segment);
     }
+printf("Segment list length: %d\n", klm_segment_list_get_length(segment_list));
+printf("Segment item 0: %p\n", klm_segment_list_get_nth(segment_list, 0));
+printf("Segment item 1: %p\n", klm_segment_list_get_nth(segment_list, 1));
+printf("Segment item 2: %p\n", klm_segment_list_get_nth(segment_list, 2));
 
     // ----------------------------------------------------------------------
     // Initialize the matrix with the segments and fonts
