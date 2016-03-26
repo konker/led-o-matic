@@ -9,6 +9,7 @@ set(DEFAULT_INIH_DIR "${CMAKE_SOURCE_DIR}/../inih")
 
 option(LEDOMATIC_NO_FORK "Led-o-maticd will not fork and run as a deamon" OFF)
 option(KLM_DRIVER "Which LED panel specific driver to use" OFF)
+option(KLM_WIRING_PI "Build target is a Raspberry Pi using the WiringPi library" OFF)
 
 option(HEXFONT_DIR "Location of the hexfont library" OFF)
 option(TINYUTF8_DIR "Location of the tinyutf8 library" OFF)
@@ -41,6 +42,10 @@ if(NOT INIH_DIR)
     set(INIH_DIR ${DEFAULT_INIH_DIR})
 endif()
 
+if(KLM_WIRING_PI)
+    add_definitions(-DKLM_WIRING_PI)
+endif()
+
 include_directories(include)
 
 include_directories(${HEXFONT_DIR}/include)
@@ -64,5 +69,9 @@ endif()
 file(GLOB SOURCES "src/*.c")
 
 add_executable(led-o-maticd ${SOURCES})
-target_link_libraries(led-o-maticd klm ${KLM_DRIVER} hexfont tinyutf8 inih pthread)
+if(KLM_WIRING_PI)
+    target_link_libraries(led-o-maticd klm ${KLM_DRIVER} hexfont tinyutf8 inih pthread wiringPi)
+else()
+    target_link_libraries(led-o-maticd klm ${KLM_DRIVER} hexfont tinyutf8 inih pthread)
+endif()
 
