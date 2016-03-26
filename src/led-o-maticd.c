@@ -38,41 +38,14 @@ static void signal_handler(int signum) {
     lomd.running = false;
 }
 
-
 /**
   // ----------------------------------------------------------------------
-  // Main loop procedure
   [TODO: comment]
 */
-static void main_loop(ledomaticd *lomd) {
-    struct timespec delay_t;
-    delay_t.tv_sec = 0;
-    delay_t.tv_nsec = 0;
-
-    struct timespec now_t;
-    int64_t micros_0, micros_1;
-
-    while (lomd->running) {
-        LEDOMATIC_NOW_MICROSECS(micros_0, now_t)
-
-        klm_mat_tick_lock(lomd->matrix, &(lomd->scan_lock));
-
-        LEDOMATIC_NOW_MICROSECS(micros_1, now_t)
-
-        // Delay to make loop time consistent
-        delay_t.tv_nsec =
-            LEDOMATIC_MAIN_LOOP_PERIOD_NANOS
-                - ((micros_1 - micros_0) * LEDOMATIC_ONE_THOUSAND);
-
-        nanosleep(&delay_t, NULL);
-    }
-}
-
 int main(int argc, char **argv) {
     // ----------------------------------------------------------------------
     // Initialize ledomaticd structure
     lomd.running = true;
-    lomd.scan_lock = false;
 
     // ----------------------------------------------------------------------
     // Parse command line arguments
@@ -193,32 +166,16 @@ int main(int argc, char **argv) {
     }
 
     // ----------------------------------------------------------------------
-    // Matrix scanner thread
-    pthread_t ledomatic_matrix_scanner_tid;
-    int rc2 = pthread_create(
-                    &ledomatic_matrix_scanner_tid,
-                    NULL,
-                    ledomatic_matrix_scanner_thread,
-                    &lomd);
-    if (rc2) {
-        LEDOMATIC_LOG(lomd, "ERROR: in create of Matrix scanner thread: %d\n", rc2);
-        fclose(lomd.logfp);
-        exit(EXIT_FAILURE);
+    // The main loop
+    while (lomd.running) {
+        klm_mat_scan(lomd.matrix);
     }
-
-    // ----------------------------------------------------------------------
-    // Call the main loop
-    main_loop(&lomd);
 
     // Main loop now finished...
 
     // ----------------------------------------------------------------------
     // Stop the UDP listening thread
     pthread_join(ledomatic_udp_listener_tid, NULL);
-
-    // ----------------------------------------------------------------------
-    // Stop the Matrix scanner thread
-    pthread_join(ledomatic_matrix_scanner_tid, NULL);
 
     // ----------------------------------------------------------------------
     // Clean up and exit

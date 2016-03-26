@@ -59,7 +59,6 @@ typedef struct ledomaticd {
     int sockfd;
     volatile bool running;
     klm_matrix *matrix;
-    bool scan_lock;
 
 } ledomaticd;
 

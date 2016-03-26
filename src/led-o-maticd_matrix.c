@@ -70,14 +70,10 @@ bool ledomatic_matrix_init(ledomaticd * const lomd) {
                     lomd->config.segment_configs[i].height,
                     lomd->config.segment_configs[i].font_index);
 
-printf("Appending segment %p to list %p\n", segment, segment_list);
         // Add the segments to the segment list
         klm_segment_list_append(segment_list, segment);
+        LEDOMATIC_LOG(*lomd, "Appended segment %p to list %p\n", segment, segment_list);
     }
-printf("Segment list length: %d\n", klm_segment_list_get_length(segment_list));
-printf("Segment item 0: %p\n", klm_segment_list_get_nth(segment_list, 0));
-printf("Segment item 1: %p\n", klm_segment_list_get_nth(segment_list, 1));
-printf("Segment item 2: %p\n", klm_segment_list_get_nth(segment_list, 2));
 
     // ----------------------------------------------------------------------
     // Initialize the matrix with the segments and fonts
@@ -99,26 +95,5 @@ void ledomatic_matrix_exit(ledomaticd * const lomd) {
     klm_mat_destroy(lomd->matrix);
     free(lomd->matrix->display_buffer0);
     free(lomd->matrix->display_buffer1);
-}
-
-/**
-  // ----------------------------------------------------------------------
-  Main matrix scan thread function
-  [TODO: comment]
-*/
-void *ledomatic_matrix_scanner_thread(void *arg) {
-    ledomaticd *lomd = arg;
-    LEDOMATIC_LOG(*lomd, "Matrix scanner: starting: %p\n", lomd);
-
-    while (lomd->running) {
-        if (lomd->scan_lock) {
-            continue;
-        }
-        klm_mat_scan(lomd->matrix);
-    }
-
-    LEDOMATIC_LOG(*lomd, "Matrix scanner: exiting\n");
-    pthread_exit(NULL);
-    return NULL;
 }
 
