@@ -65,9 +65,6 @@ int ledomatic_config_handler_p1(void* user, const char* section,
     else if (MATCH("segment", "font_index")) {
         ledomatic_config_segment_field_count++;
     }
-    else {
-        LEDOMATIC_LOG(*ledomatic_config_global_lomd, "Warning: Unknown config item: %s, %s\n", section, name);
-    }
 
     if (ledomatic_config_segment_field_count == LEDOMATIC_CONFIG_NUM_SEGMENT_FIELDS) {
         // End of segment
@@ -158,7 +155,7 @@ int ledomatic_config_handler_p2(void* user, const char* section,
     else if (MATCH("matrix", "clk")) {
         config->clk = atoi(value);
     }
-    else {
+    else if (!MATCH("font", "file")) {
         LEDOMATIC_LOG(*ledomatic_config_global_lomd, "Warning: Unknown config item: %s, %s\n", section, name);
     }
 
