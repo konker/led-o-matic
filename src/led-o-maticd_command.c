@@ -17,10 +17,6 @@
 #define LEDOMATIC_CMD_OFF "off"
 // Switch display on
 #define LEDOMATIC_CMD_ON "on"
-// Stop scrolling a segment
-#define LEDOMATIC_CMD_STOP "stop:%d"
-// Resume scrolling a segment
-#define LEDOMATIC_CMD_START "start:%d"
 // Hide a segment
 #define LEDOMATIC_CMD_HIDE "hide:%d"
 // Show a segment
@@ -29,8 +25,14 @@
 #define LEDOMATIC_CMD_REVERSE "reverse:%d"
 // Set the text for a segment
 #define LEDOMATIC_CMD_TEXT "text:%d:%" LEDOMATIC_TOSTRING(KLM_TEXT_LEN) "[^\t\n]"
-// Set scroll speed for a segment
-#define LEDOMATIC_CMD_SPEED "speed:%d:%f"
+#ifdef KLM_NATIVE_ANIMATION
+    // Stop scrolling a segment
+    #define LEDOMATIC_CMD_STOP "stop:%d"
+    // Resume scrolling a segment
+    #define LEDOMATIC_CMD_START "start:%d"
+    // Set scroll speed for a segment
+    #define LEDOMATIC_CMD_SPEED "speed:%d:%f"
+#endif
 // Set the text position for a segment
 #define LEDOMATIC_CMD_POSITION "position:%d:%f"
 
@@ -53,24 +55,6 @@ void handle_command(ledomaticd * const lomd, char *buf) {
     else if (strcasecmp(buf, LEDOMATIC_CMD_CLEAR) == 0) {
         LEDOMATIC_LOG(*lomd, "UDP listener: [clear]\n");
         klm_mat_clear(lomd->matrix);
-    }
-    else if (sscanf(buf, LEDOMATIC_CMD_STOP, &seg_index) == 1) {
-        LEDOMATIC_LOG(*lomd, "UDP listener: [stop %d]\n", seg_index);
-        seg = klm_segment_list_get_nth(lomd->matrix->segment_list, seg_index);
-        if (seg == NULL) {
-            LEDOMATIC_LOG(*lomd, "Warning: Bad segment index: %d - ignoring\n", seg_index);
-            return;
-        }
-        klm_seg_stop(seg);
-    }
-    else if (sscanf(buf, LEDOMATIC_CMD_START, &seg_index) == 1) {
-        LEDOMATIC_LOG(*lomd, "UDP listener: [start %d]\n", seg_index);
-        seg = klm_segment_list_get_nth(lomd->matrix->segment_list, seg_index);
-        if (seg == NULL) {
-            LEDOMATIC_LOG(*lomd, "Warning: Bad segment index: %d - ignoring\n", seg_index);
-            return;
-        }
-        klm_seg_start(seg);
     }
     else if (strcasecmp(buf, LEDOMATIC_CMD_OFF) == 0) {
         LEDOMATIC_LOG(*lomd, "UDP listener: [off]\n");
@@ -116,6 +100,25 @@ void handle_command(ledomaticd * const lomd, char *buf) {
         }
         klm_seg_set_text(seg, str);
     }
+#ifdef KLM_NATIVE_ANIMATION
+    else if (sscanf(buf, LEDOMATIC_CMD_STOP, &seg_index) == 1) {
+        LEDOMATIC_LOG(*lomd, "UDP listener: [stop %d]\n", seg_index);
+        seg = klm_segment_list_get_nth(lomd->matrix->segment_list, seg_index);
+        if (seg == NULL) {
+            LEDOMATIC_LOG(*lomd, "Warning: Bad segment index: %d - ignoring\n", seg_index);
+            return;
+        }
+        klm_seg_stop(seg);
+    }
+    else if (sscanf(buf, LEDOMATIC_CMD_START, &seg_index) == 1) {
+        LEDOMATIC_LOG(*lomd, "UDP listener: [start %d]\n", seg_index);
+        seg = klm_segment_list_get_nth(lomd->matrix->segment_list, seg_index);
+        if (seg == NULL) {
+            LEDOMATIC_LOG(*lomd, "Warning: Bad segment index: %d - ignoring\n", seg_index);
+            return;
+        }
+        klm_seg_start(seg);
+    }
     else if (sscanf(buf, LEDOMATIC_CMD_SPEED, &seg_index, &num) == 2) {
         LEDOMATIC_LOG(*lomd, "UDP listener: [speed %d => %f]\n", seg_index, num);
         seg = klm_segment_list_get_nth(lomd->matrix->segment_list, seg_index);
@@ -125,6 +128,7 @@ void handle_command(ledomaticd * const lomd, char *buf) {
         }
         klm_seg_set_text_speed(seg, num);
     }
+#endif
     else if (sscanf(buf, LEDOMATIC_CMD_POSITION, &seg_index, &num) == 2) {
         LEDOMATIC_LOG(*lomd, "UDP listener: [position %d => %f]\n", seg_index, num);
         seg = klm_segment_list_get_nth(lomd->matrix->segment_list, seg_index);
