@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <hexfont.h>
+#include <klm_config.h>
 #include <klm_matrix.h>
 #include "led-o-maticd.h"
 #include "led-o-maticd_config.h"
@@ -26,20 +27,22 @@ bool ledomatic_matrix_init(ledomaticd * const lomd) {
         calloc(KLM_BUFFER_LEN(lomd->config.matrix_width, lomd->config.matrix_height),
                sizeof(*ledomatic_display_buffer1));
 
-    lomd->matrix = klm_mat_create(
+    klm_config *config =
+            klm_config_create(lomd->config.matrix_width, lomd->config.matrix_height);
+    klm_config_set_pin(config, 'a', lomd->config.a);
+    klm_config_set_pin(config, 'b', lomd->config.b);
+    klm_config_set_pin(config, 'c', lomd->config.c);
+    klm_config_set_pin(config, 'd', lomd->config.d);
+    klm_config_set_pin(config, 'o', lomd->config.oe);
+    klm_config_set_pin(config, 'r', lomd->config.r1);
+    klm_config_set_pin(config, 's', lomd->config.stb);
+    klm_config_set_pin(config, 'x', lomd->config.clk);
+
+    lomd->matrix = klm_mat_create_static(
                             lomd->logfp,
+                            config,
                             ledomatic_display_buffer0,
-                            ledomatic_display_buffer1,
-                            lomd->config.matrix_width,
-                            lomd->config.matrix_height,
-                            lomd->config.a,
-                            lomd->config.b,
-                            lomd->config.c,
-                            lomd->config.d,
-                            lomd->config.oe,
-                            lomd->config.r1,
-                            lomd->config.stb,
-                            lomd->config.clk);
+                            ledomatic_display_buffer1);
 
     // ----------------------------------------------------------------------
     // Initialize some font(s)
