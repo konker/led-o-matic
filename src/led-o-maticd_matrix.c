@@ -9,6 +9,9 @@
 #include "led-o-maticd_matrix.h"
 
 
+uint8_t *ledomatic_display_buffer0;
+uint8_t *ledomatic_display_buffer1;
+
 bool ledomatic_matrix_init(ledomaticd * const lomd) {
     // ----------------------------------------------------------------------
     // Initialize matrix system
@@ -18,8 +21,6 @@ bool ledomatic_matrix_init(ledomaticd * const lomd) {
 
     // ----------------------------------------------------------------------
     // Create a matrix
-    uint8_t *ledomatic_display_buffer0;
-    uint8_t *ledomatic_display_buffer1;
     ledomatic_display_buffer0 =
         calloc(KLM_BUFFER_LEN(lomd->config.matrix_width, lomd->config.matrix_height),
                sizeof(*ledomatic_display_buffer1));
@@ -49,9 +50,12 @@ bool ledomatic_matrix_init(ledomaticd * const lomd) {
     hexfont_list * const font_list = hexfont_list_create(NULL);
     int8_t i;
     for (i=0; i<lomd->config.num_fonts; i++) {
-        hexfont * const font = hexfont_load(lomd->config.fonts[i], 16);
+        hexfont * const font = hexfont_load(
+                lomd->config.font_configs[i].file,
+                lomd->config.font_configs[i].height);
+
         if (font == NULL) {
-            LEDOMATIC_LOG(*lomd, "ERROR: Could not load font: %s\n", lomd->config.fonts[i]);
+            LEDOMATIC_LOG(*lomd, "ERROR: Could not load font: %s\n", lomd->config.font_configs[i]);
             return false;
         }
 
@@ -96,7 +100,7 @@ bool ledomatic_matrix_init(ledomaticd * const lomd) {
 */
 void ledomatic_matrix_exit(ledomaticd * const lomd) {
     klm_mat_destroy(lomd->matrix);
-    free(lomd->matrix->display_buffer0);
-    free(lomd->matrix->display_buffer1);
+    free(ledomatic_display_buffer0);
+    free(ledomatic_display_buffer1);
 }
 

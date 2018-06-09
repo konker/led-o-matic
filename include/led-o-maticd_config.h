@@ -32,6 +32,13 @@ extern "C" {
 typedef struct ledomaticd ledomaticd;
 
 typedef struct {
+    char* file;
+    uint16_t width;
+    uint16_t height;
+
+} ledomatic_config_font;
+
+typedef struct {
     int16_t x;
     int16_t y;
     uint16_t width;
@@ -59,7 +66,7 @@ typedef struct {
 
     // Fonts
     uint8_t num_fonts;
-    char **fonts;
+    ledomatic_config_font *font_configs;
 
     // Segments
     uint8_t num_segments;

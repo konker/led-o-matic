@@ -10,10 +10,14 @@
 #include "led-o-maticd_config.h"
 
 #define LEDOMATIC_CONFIG_NUM_SEGMENT_FIELDS 5
+#define LEDOMATIC_CONFIG_NUM_FONT_FIELDS 3
 
 static ledomaticd *ledomatic_config_global_lomd;
+static ledomatic_config_font ledomatic_config_cur_font;
 static ledomatic_config_segment ledomatic_config_cur_segment;
+static bool ledomatic_config_in_font;
 static bool ledomatic_config_in_segment;
+static uint8_t ledomatic_config_font_field_count;
 static uint8_t ledomatic_config_segment_field_count;
 static uint8_t ledomatic_config_num_fonts;
 static uint8_t ledomatic_config_num_segments;
@@ -32,22 +36,34 @@ int ledomatic_config_handler_p1(void* user, const char* section,
     #define MATCH_SECTION(s) strcmp(section, s) == 0
     #define MATCH(s, n) strcmp(section, s) == 0 && strcmp(name, n) == 0
     if (MATCH_SECTION("font")) {
-        ledomatic_config_num_fonts++;
+        if (!ledomatic_config_in_font) {
+            ledomatic_config_num_fonts++;
+            ledomatic_config_font_field_count = 0;
+        }
+        ledomatic_config_in_font = true;
+        ledomatic_config_in_segment = false;
     }
-    if (MATCH_SECTION("segment")) {
+    else if (MATCH_SECTION("segment")) {
         if (!ledomatic_config_in_segment) {
             ledomatic_config_num_segments++;
             ledomatic_config_segment_field_count = 0;
         }
         ledomatic_config_in_segment = true;
+        ledomatic_config_in_font = false;
+    }
+    else if (ledomatic_config_in_font && ledomatic_config_font_field_count != LEDOMATIC_CONFIG_NUM_FONT_FIELDS) {
+        // Wrong number of fields in segment config, fatal error
+        LEDOMATIC_LOG(*ledomatic_config_global_lomd, "Fatal Error: Wrong number fields in font config\n");
+        return -1;
+    }
+    else if (ledomatic_config_in_segment && ledomatic_config_segment_field_count != LEDOMATIC_CONFIG_NUM_SEGMENT_FIELDS) {
+        // Wrong number of fields in segment config, fatal error
+        LEDOMATIC_LOG(*ledomatic_config_global_lomd, "Fatal Error: Wrong number fields in segment config\n");
+        return -1;
     }
     else {
-        if (ledomatic_config_in_segment && ledomatic_config_segment_field_count != LEDOMATIC_CONFIG_NUM_SEGMENT_FIELDS) {
-            // Wrong number of fields in segment config, fatal error
-            LEDOMATIC_LOG(*ledomatic_config_global_lomd, "Fatal Error: Wrong number fields in segment config\n");
-            return -1;
-        }
         ledomatic_config_in_segment = false;
+        ledomatic_config_in_font = false;
     }
 
     if (MATCH("segment", "x")) {
@@ -64,6 +80,21 @@ int ledomatic_config_handler_p1(void* user, const char* section,
     }
     else if (MATCH("segment", "font_index")) {
         ledomatic_config_segment_field_count++;
+    }
+    else if (MATCH("font", "file")) {
+        ledomatic_config_font_field_count++;
+    }
+    else if (MATCH("font", "width")) {
+        ledomatic_config_font_field_count++;
+    }
+    else if (MATCH("font", "height")) {
+        ledomatic_config_font_field_count++;
+    }
+
+    if (ledomatic_config_font_field_count == LEDOMATIC_CONFIG_NUM_FONT_FIELDS) {
+        // End of font
+        ledomatic_config_font_field_count = 0;
+        ledomatic_config_in_font = false;
     }
 
     if (ledomatic_config_segment_field_count == LEDOMATIC_CONFIG_NUM_SEGMENT_FIELDS) {
@@ -83,8 +114,15 @@ int ledomatic_config_handler_p2(void* user, const char* section,
     #define MATCH_SECTION(s) strcmp(section, s) == 0
     #define MATCH(s, n) strcmp(section, s) == 0 && strcmp(name, n) == 0
     if (MATCH_SECTION("font")) {
-        config->fonts[ledomatic_config_cur_font_index] = strdup(value);
-        ledomatic_config_cur_font_index++;
+        if (!ledomatic_config_in_font) {
+            ledomatic_config_font_field_count = 0;
+
+            ledomatic_config_cur_font.file = NULL;
+            ledomatic_config_cur_font.width = 0;
+            ledomatic_config_cur_font.height = 0;
+        }
+        ledomatic_config_in_font = true;
+        ledomatic_config_in_segment = false;
     }
     else if (MATCH_SECTION("segment")) {
         if (!ledomatic_config_in_segment) {
@@ -97,6 +135,7 @@ int ledomatic_config_handler_p2(void* user, const char* section,
             ledomatic_config_cur_segment.font_index = 0;
         }
         ledomatic_config_in_segment = true;
+        ledomatic_config_in_font = false;
     }
 
     if (MATCH("udp", "host")) {
@@ -155,18 +194,45 @@ int ledomatic_config_handler_p2(void* user, const char* section,
     else if (MATCH("matrix", "clk")) {
         config->clk = atoi(value);
     }
-    else if (!MATCH("font", "file")) {
-        LEDOMATIC_LOG(*ledomatic_config_global_lomd, "Warning: Unknown config item: %s, %s\n", section, name);
+    else if (MATCH("font", "file")) {
+        config->font_configs[ledomatic_config_cur_font_index].file = strdup(value);
+        ledomatic_config_font_field_count++;
+    }
+    else if (MATCH("font", "width")) {
+        config->font_configs[ledomatic_config_cur_font_index].width = atoi(value);
+        ledomatic_config_font_field_count++;
+    }
+    else if (MATCH("font", "height")) {
+        config->font_configs[ledomatic_config_cur_font_index].height = atoi(value);
+        ledomatic_config_font_field_count++;
+    }
+
+    if (ledomatic_config_font_field_count == LEDOMATIC_CONFIG_NUM_FONT_FIELDS) {
+        // End of font
+        /*[XXX: what is this for?]
+        ledomatic_config_cur_font_index,
+        config->font_configs[ledomatic_config_cur_font_index].x,
+        config->font_configs[ledomatic_config_cur_font_index].y,
+        config->font_configs[ledomatic_config_cur_font_index].width,
+        config->font_configs[ledomatic_config_cur_font_index].height,
+        config->font_configs[ledomatic_config_cur_font_index].font_index;
+        */
+
+        ledomatic_config_font_field_count = 0;
+        ledomatic_config_in_font = false;
+        ledomatic_config_cur_font_index++;
     }
 
     if (ledomatic_config_segment_field_count == LEDOMATIC_CONFIG_NUM_SEGMENT_FIELDS) {
         // End of segment
+        /*[XXX: what is this for?]
         ledomatic_config_cur_segment_index,
         config->segment_configs[ledomatic_config_cur_segment_index].x,
         config->segment_configs[ledomatic_config_cur_segment_index].y,
         config->segment_configs[ledomatic_config_cur_segment_index].width,
         config->segment_configs[ledomatic_config_cur_segment_index].height,
         config->segment_configs[ledomatic_config_cur_segment_index].font_index;
+        */
 
         ledomatic_config_segment_field_count = 0;
         ledomatic_config_in_segment = false;
@@ -192,15 +258,17 @@ bool ledomatic_config_parse(ledomaticd * const lomd) {
                   ledomatic_config_num_fonts, ledomatic_config_num_segments);
 
     lomd->config.num_fonts = ledomatic_config_num_fonts;
-    lomd->config.fonts =
-        calloc(sizeof(*(lomd->config.fonts)), ledomatic_config_num_fonts);
+    lomd->config.font_configs =
+        calloc(sizeof(*(lomd->config.font_configs)), ledomatic_config_num_fonts);
 
     lomd->config.num_segments = ledomatic_config_num_segments;
     lomd->config.segment_configs =
         calloc(sizeof(*(lomd->config.segment_configs)), lomd->config.num_segments);
 
     ledomatic_config_cur_font_index = 0;
-    ledomatic_config_cur_segment_index = 0;
+    ledomatic_config_cur_font.file = NULL;
+    ledomatic_config_cur_font.width = 0;
+    ledomatic_config_cur_font.height = 0;
 
     ledomatic_config_in_segment = false;
     ledomatic_config_segment_field_count = 0;
