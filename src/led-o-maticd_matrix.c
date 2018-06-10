@@ -21,13 +21,6 @@ bool ledomatic_matrix_init(ledomaticd * const lomd) {
 
     // ----------------------------------------------------------------------
     // Create a matrix
-    ledomatic_display_buffer0 =
-        calloc(KLM_BUFFER_LEN(lomd->config.matrix_width, lomd->config.matrix_height),
-               sizeof(*ledomatic_display_buffer1));
-    ledomatic_display_buffer1 =
-        calloc(KLM_BUFFER_LEN(lomd->config.matrix_width, lomd->config.matrix_height),
-               sizeof(*ledomatic_display_buffer1));
-
     klm_config *config =
             klm_config_create(lomd->config.matrix_width, lomd->config.matrix_height);
     klm_config_set_pin(config, 'a', lomd->config.a);
@@ -39,11 +32,7 @@ bool ledomatic_matrix_init(ledomaticd * const lomd) {
     klm_config_set_pin(config, 's', lomd->config.stb);
     klm_config_set_pin(config, 'x', lomd->config.clk);
 
-    lomd->matrix = klm_mat_create_static(
-                            lomd->logfp,
-                            config,
-                            ledomatic_display_buffer0,
-                            ledomatic_display_buffer1);
+    lomd->matrix = klm_mat_create(lomd->logfp, config);
 
     // ----------------------------------------------------------------------
     // Initialize some font(s)
