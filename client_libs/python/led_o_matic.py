@@ -47,6 +47,10 @@ class LedOMatic(object):
         self._write_cmd("text:%s:%s\n" % (segment, text))
 
 
+    def exit(self):
+        self._write_cmd("exit\n")
+
+
 
 if __name__ == '__main__':
     server = LedOMatic(7890)
