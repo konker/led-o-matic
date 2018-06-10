@@ -209,15 +209,6 @@ int ledomatic_config_handler_p2(void* user, const char* section,
 
     if (ledomatic_config_font_field_count == LEDOMATIC_CONFIG_NUM_FONT_FIELDS) {
         // End of font
-        /*[XXX: what is this for?]
-        ledomatic_config_cur_font_index,
-        config->font_configs[ledomatic_config_cur_font_index].x,
-        config->font_configs[ledomatic_config_cur_font_index].y,
-        config->font_configs[ledomatic_config_cur_font_index].width,
-        config->font_configs[ledomatic_config_cur_font_index].height,
-        config->font_configs[ledomatic_config_cur_font_index].font_index;
-        */
-
         ledomatic_config_font_field_count = 0;
         ledomatic_config_in_font = false;
         ledomatic_config_cur_font_index++;
@@ -225,15 +216,6 @@ int ledomatic_config_handler_p2(void* user, const char* section,
 
     if (ledomatic_config_segment_field_count == LEDOMATIC_CONFIG_NUM_SEGMENT_FIELDS) {
         // End of segment
-        /*[XXX: what is this for?]
-        ledomatic_config_cur_segment_index,
-        config->segment_configs[ledomatic_config_cur_segment_index].x,
-        config->segment_configs[ledomatic_config_cur_segment_index].y,
-        config->segment_configs[ledomatic_config_cur_segment_index].width,
-        config->segment_configs[ledomatic_config_cur_segment_index].height,
-        config->segment_configs[ledomatic_config_cur_segment_index].font_index;
-        */
-
         ledomatic_config_segment_field_count = 0;
         ledomatic_config_in_segment = false;
         ledomatic_config_cur_segment_index++;
