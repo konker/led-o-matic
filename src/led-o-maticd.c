@@ -167,8 +167,10 @@ int main(int argc, char **argv) {
 
     // ----------------------------------------------------------------------
     // The main loop
+    //int i = 0;
     while (lomd.running) {
         klm_mat_scan(lomd.matrix);
+        //if ((i++ % 100000) == 0) klm_mat_dump_buffer(lomd.matrix);
     }
 
     // Main loop now finished...
