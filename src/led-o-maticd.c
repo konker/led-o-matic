@@ -46,6 +46,8 @@ int main(int argc, char **argv) {
     // ----------------------------------------------------------------------
     // Initialize ledomaticd structure
     lomd.running = true;
+    lomd.micros_0 = 0;
+    lomd.micros_1 = 0;
 
     // ----------------------------------------------------------------------
     // Parse command line arguments
@@ -167,10 +169,21 @@ int main(int argc, char **argv) {
 
     // ----------------------------------------------------------------------
     // The main loop
-    //int i = 0;
     while (lomd.running) {
+        KLM_NOW_MICROSECS(lomd.micros_1, lomd.now_t);
+
+        // Delay at the beginning of each complete scan to make loop time consistent
+        if (lomd.matrix->scan_row == 0) {
+            int64_t period = LEDOMATIC_TICK_PERIOD_MICROS
+                             - (lomd.micros_1 - lomd.micros_0);
+
+            if (period > 0) {
+                usleep(period);
+            }
+            lomd.micros_0 = lomd.micros_1;
+        }
+
         klm_mat_scan(lomd.matrix);
-        //if ((i++ % 100000) == 0) klm_mat_dump_buffer(lomd.matrix);
     }
 
     // Main loop now finished...

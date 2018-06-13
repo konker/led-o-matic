@@ -13,6 +13,8 @@
 #define LEDOMATIC_CMD_EXIT "exit"
 // Clear the display
 #define LEDOMATIC_CMD_CLEAR "clear"
+// Clear a segment
+#define LEDOMATIC_CMD_CLEAR_SEG "clear:%d"
 // Switch display off
 #define LEDOMATIC_CMD_OFF "off"
 // Switch display on
@@ -55,7 +57,16 @@ void handle_command(ledomaticd * const lomd, char *buf) {
     }
     else if (strcasecmp(buf, LEDOMATIC_CMD_CLEAR) == 0) {
         LEDOMATIC_LOG(*lomd, "UDP listener: [clear]\n");
-        klm_mat_clear(lomd->matrix);
+        klm_mat_clear_text(lomd->matrix);
+    }
+    else if (sscanf(buf, LEDOMATIC_CMD_CLEAR_SEG, &seg_index) == 1) {
+        LEDOMATIC_LOG(*lomd, "UDP listener: [clear seg %d]\n", seg_index);
+        seg = klm_segment_list_get_nth(lomd->matrix->segment_list, seg_index);
+        if (seg == NULL) {
+            LEDOMATIC_LOG(*lomd, "Warning: Bad segment index: %d - ignoring\n", seg_index);
+            return;
+        }
+        klm_seg_clear_text(seg);
     }
     else if (strcasecmp(buf, LEDOMATIC_CMD_OFF) == 0) {
         LEDOMATIC_LOG(*lomd, "UDP listener: [off]\n");

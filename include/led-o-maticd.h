@@ -47,6 +47,9 @@
 #define LEDOMATIC_STRINGIFY(x) #x
 #define LEDOMATIC_TOSTRING(x) LEDOMATIC_STRINGIFY(x)
 
+// 1 thousand => 1 millisecond
+#define LEDOMATIC_TICK_PERIOD_MICROS 100 * KLM_ONE_THOUSAND
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -59,6 +62,10 @@ typedef struct ledomaticd {
     int sockfd;
     volatile bool running;
     klm_matrix *matrix;
+
+    struct timespec now_t;
+    int64_t micros_0;
+    int64_t micros_1;
 
 } ledomaticd;
 
