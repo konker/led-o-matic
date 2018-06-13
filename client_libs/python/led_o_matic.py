@@ -26,6 +26,9 @@ class LedOMatic(object):
     def off(self):
         self._write_cmd("off\n")
 
+    def modulate(self, n):
+        self._write_cmd("modulate:%s\n" % n)
+
 
     def start(self, segment):
         self._write_cmd("start:%s\n" % segment)
@@ -45,6 +48,13 @@ class LedOMatic(object):
 
     def text(self, segment, text):
         self._write_cmd("text:%s:%s\n" % (segment, text))
+
+
+    def position(self, segment, x):
+        self._write_cmd("position:%s:%s\n" % (segment, x))
+
+    def speed(self, segment, speed):
+        self._write_cmd("speed:%s:%s\n" % (segment, speed))
 
 
     def exit(self):
