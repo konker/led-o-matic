@@ -44,7 +44,7 @@ bool ledomatic_matrix_init(ledomaticd * const lomd) {
                 lomd->config.font_configs[i].height);
 
         if (font == NULL) {
-            LEDOMATIC_LOG(*lomd, "ERROR: Could not load font: %s\n", lomd->config.font_configs[i]);
+            LEDOMATIC_LOG(*lomd, "ERROR: Could not load font: %s\n", lomd->config.font_configs[i].file);
             return false;
         }
 
