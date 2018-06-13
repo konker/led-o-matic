@@ -24,7 +24,7 @@
 // Reverse display colors for a segment
 #define LEDOMATIC_CMD_REVERSE "reverse:%d"
 // Reverse display colors for a segment
-#define LEDOMATIC_CMD_SCAN_MODULATE "modulate:%d"
+#define LEDOMATIC_CMD_SCAN_MODULATE "modulate:%hu"
 // Set the text for a segment
 #define LEDOMATIC_CMD_TEXT "text:%d:%" LEDOMATIC_TOSTRING(KLM_TEXT_LEN) "[^\t\n]"
 #ifdef KLM_NATIVE_ANIMATION
@@ -95,7 +95,7 @@ void handle_command(ledomaticd * const lomd, char *buf) {
         klm_seg_reverse(seg);
     }
     else if (sscanf(buf, LEDOMATIC_CMD_SCAN_MODULATE, &scan_modulation) == 1) {
-        LEDOMATIC_LOG(*lomd, "UDP listener: [modulate %d]\n", scan_modulation);
+        LEDOMATIC_LOG(*lomd, "UDP listener: [modulate %hu]\n", scan_modulation);
         klm_mat_set_scan_modulation(lomd->matrix, scan_modulation);
     }
     else if (sscanf(buf, LEDOMATIC_CMD_TEXT, &seg_index, str) == 2) {
