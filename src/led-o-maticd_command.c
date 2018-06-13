@@ -27,14 +27,12 @@
 #define LEDOMATIC_CMD_SCAN_MODULATE "modulate:%hu"
 // Set the text for a segment
 #define LEDOMATIC_CMD_TEXT "text:%d:%" LEDOMATIC_TOSTRING(KLM_TEXT_LEN) "[^\t\n]"
-#ifdef KLM_NATIVE_ANIMATION
-    // Stop scrolling a segment
-    #define LEDOMATIC_CMD_STOP "stop:%d"
-    // Resume scrolling a segment
-    #define LEDOMATIC_CMD_START "start:%d"
-    // Set scroll speed for a segment
-    #define LEDOMATIC_CMD_SPEED "speed:%d:%f"
-#endif
+// Stop scrolling a segment
+#define LEDOMATIC_CMD_STOP "stop:%d"
+// Resume scrolling a segment
+#define LEDOMATIC_CMD_START "start:%d"
+// Set scroll speed for a segment
+#define LEDOMATIC_CMD_SPEED "speed:%d:%f"
 // Set the text position for a segment
 #define LEDOMATIC_CMD_POSITION "position:%d:%f"
 
@@ -107,7 +105,6 @@ void handle_command(ledomaticd * const lomd, char *buf) {
         }
         klm_seg_set_text(seg, str);
     }
-#ifdef KLM_NATIVE_ANIMATION
     else if (sscanf(buf, LEDOMATIC_CMD_STOP, &seg_index) == 1) {
         LEDOMATIC_LOG(*lomd, "UDP listener: [stop %d]\n", seg_index);
         seg = klm_segment_list_get_nth(lomd->matrix->segment_list, seg_index);
@@ -135,7 +132,6 @@ void handle_command(ledomaticd * const lomd, char *buf) {
         }
         klm_seg_set_text_speed(seg, num);
     }
-#endif
     else if (sscanf(buf, LEDOMATIC_CMD_POSITION, &seg_index, &num) == 2) {
         LEDOMATIC_LOG(*lomd, "UDP listener: [position %d => %f]\n", seg_index, num);
         seg = klm_segment_list_get_nth(lomd->matrix->segment_list, seg_index);
