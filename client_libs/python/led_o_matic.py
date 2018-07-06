@@ -58,6 +58,10 @@ class LedOMatic(object):
         self._write_cmd("position:%s:%s\n" % (segment, x))
 
 
+    def center(self, segment):
+        self._write_cmd("center:%s\n" % segment)
+
+
     def speed(self, segment, speed):
         self._write_cmd("speed:%s:%s\n" % (segment, speed))
 
