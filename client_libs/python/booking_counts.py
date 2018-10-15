@@ -14,7 +14,7 @@ url = 'https://counter.analytics.maas.global/current'
 headers = {'x-api-key': 'fWFo8rlFYm849XgetJMMp1q1sgcA10TU7UerCqlN'}
 
 # Connect to sign
-lomd = LedOMatic(ip='0.0.0.0', port=7890)
+lomd = LedOMatic(ip='10.0.1.52', port=7890)
 
 
 def main():
