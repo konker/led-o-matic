@@ -11,6 +11,7 @@
 
 uint8_t *ledomatic_display_buffer0;
 uint8_t *ledomatic_display_buffer1;
+klm_config *config;
 
 bool ledomatic_matrix_init(ledomaticd * const lomd) {
     // ----------------------------------------------------------------------
@@ -21,8 +22,7 @@ bool ledomatic_matrix_init(ledomaticd * const lomd) {
 
     // ----------------------------------------------------------------------
     // Create a matrix
-    klm_config *config =
-            klm_config_create(lomd->config.matrix_width, lomd->config.matrix_height);
+    config = klm_config_create(lomd->config.matrix_width, lomd->config.matrix_height);
     klm_config_set_pin(config, 'a', lomd->config.a);
     klm_config_set_pin(config, 'b', lomd->config.b);
     klm_config_set_pin(config, 'c', lomd->config.c);
@@ -88,6 +88,7 @@ bool ledomatic_matrix_init(ledomaticd * const lomd) {
   [TODO: comment]
 */
 void ledomatic_matrix_exit(ledomaticd * const lomd) {
+    klm_config_destroy(config);
     klm_mat_destroy(lomd->matrix);
     free(ledomatic_display_buffer0);
     free(ledomatic_display_buffer1);
