@@ -68,25 +68,25 @@ class LedOMatic(object):
         if (len(args) > 1):
             self._write_cmd("text:%s:%s\n" % (args[0], args[1]))
         else:
-            return self._write_cmd("text:%s\n" % (args[0]))
+            return str(self._write_read_cmd("text:%s\n" % (args[0])))
 
 
     def position(self, *args):
         if (len(args) > 1):
             self._write_cmd("position:%s:%s\n" % (args[0], args[1]))
         else:
-            return self._write_read_cmd("position:%s\n" % (args[0]))
+            return int(float(self._write_read_cmd("position:%s\n" % (args[0]))))
 
 
     def center(self, segment):
-        self._write_cmd("center:%s\n" % segment)
+        return self._write_read_cmd("center:%s\n" % segment)
 
 
     def speed(self, *args):
         if (len(args) > 1):
             self._write_cmd("speed:%s:%s\n" % (args[0], args[1]))
         else:
-            return self._write_read_cmd("speed:%s\n" % (args[0]))
+            return float(self._write_read_cmd("speed:%s\n" % (args[0])))
 
 
     def exit(self):
