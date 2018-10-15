@@ -31,7 +31,7 @@
 extern "C" {
 #endif
 
-void handle_command(ledomaticd * const lomd, char *buf);
+void handle_command(ledomaticd * const lomd, char *inbuf, char *outbuf);
 
 #ifdef __cplusplus
 }

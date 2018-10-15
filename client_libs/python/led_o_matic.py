@@ -6,7 +6,11 @@ Author: Konrad Markus <konker@luxvelocitas.com>
 """
 import socket
 
+BUFSIZE = 1024
+
+
 class LedOMatic(object):
+
     def __init__(self, port, ip='127.0.0.1'):
         self.port = port
         self.ip = ip
@@ -19,6 +23,12 @@ class LedOMatic(object):
         self.sock.sendto(cmd.encode(), (self.ip, self.port))
 
 
+    def _write_read_cmd(self, cmd):
+        self.sock.sendto(cmd.encode(), (self.ip, self.port))
+        data, fromaddr = self.sock.recvfrom(BUFSIZE)
+        return data
+
+
     def on(self):
         self._write_cmd("on\n")
 
@@ -27,7 +37,11 @@ class LedOMatic(object):
         self._write_cmd("off\n")
 
 
-    def modulate(self, n):
+    def modulate(self, *args):
+        if (len(args) > 1):
+            self._write_cmd("modulate:%s\n" % (args[0]))
+        else:
+            return self._write_read_cmd("modulate\n")
         self._write_cmd("modulate:%s\n" % n)
 
 
@@ -50,20 +64,29 @@ class LedOMatic(object):
             self._write_cmd("clear\n")
 
 
-    def text(self, segment, text):
-        self._write_cmd("text:%s:%s\n" % (segment, text))
+    def text(self, *args):
+        if (len(args) > 1):
+            self._write_cmd("text:%s:%s\n" % (args[0], args[1]))
+        else:
+            return self._write_cmd("text:%s\n" % (args[0]))
 
 
-    def position(self, segment, x):
-        self._write_cmd("position:%s:%s\n" % (segment, x))
+    def position(self, *args):
+        if (len(args) > 1):
+            self._write_cmd("position:%s:%s\n" % (args[0], args[1]))
+        else:
+            return self._write_read_cmd("position:%s\n" % (args[0]))
 
 
     def center(self, segment):
         self._write_cmd("center:%s\n" % segment)
 
 
-    def speed(self, segment, speed):
-        self._write_cmd("speed:%s:%s\n" % (segment, speed))
+    def speed(self, *args):
+        if (len(args) > 1):
+            self._write_cmd("speed:%s:%s\n" % (args[0], args[1]))
+        else:
+            return self._write_read_cmd("speed:%s\n" % (args[0]))
 
 
     def exit(self):

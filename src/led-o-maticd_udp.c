@@ -30,7 +30,8 @@ void * ledomatic_udp_listener_thread(void *arg) {
     int rv;
     int numbytes;
     struct sockaddr_storage their_addr;
-    char buf[LEDOMATIC_MAXBUFLEN];
+    char inbuf[LEDOMATIC_MAXBUFLEN];
+    char outbuf[LEDOMATIC_MAXBUFLEN];
     socklen_t addr_len;
 
     memset(&hints, 0, sizeof hints);
@@ -75,7 +76,7 @@ void * ledomatic_udp_listener_thread(void *arg) {
         addr_len = sizeof their_addr;
         LEDOMATIC_LOG(*lomd, "UDP listener: waiting to recvfrom...\n");
         numbytes = recvfrom(lomd->sockfd,
-                            buf,
+                            inbuf,
                             LEDOMATIC_MAXBUFLEN-1,
                             0,
                             (struct sockaddr *)&their_addr,
@@ -88,9 +89,26 @@ void * ledomatic_udp_listener_thread(void *arg) {
         }
 
         if (lomd->running) {
-            buf[numbytes-1] = '\0';
-            LEDOMATIC_LOG(*lomd, "UDP listener: received: \"%s\"\n", buf);
-            handle_command(lomd, buf);
+            inbuf[numbytes-1] = '\0';
+            outbuf[0] = '\0';
+            LEDOMATIC_LOG(*lomd, "UDP listener: received: \"%s\"\n", inbuf);
+            handle_command(lomd, inbuf, outbuf);
+
+            size_t outbuflen = strlen(outbuf);
+            if (outbuflen > 0) {
+                numbytes = sendto(lomd->sockfd,
+                                  outbuf,
+                                  outbuflen,
+                                  0,
+                                  (struct sockaddr *)&their_addr,
+                                  addr_len);
+
+                if (numbytes == -1) {
+                    LEDOMATIC_LOG(*lomd, "UDP listener: error in sendto\n");
+                    fclose(lomd->logfp);
+                    pthread_exit(NULL);
+                }
+            }
         }
     }
 
