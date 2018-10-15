@@ -72,21 +72,27 @@ class LedOMatic(object):
 
 
     def position(self, *args):
-        if (len(args) > 1):
-            self._write_cmd("position:%s:%s\n" % (args[0], args[1]))
+        if (len(args) > 2):
+            self._write_cmd("position:%s:%s:%s\n" % (args[0], args[1], args[2]))
         else:
-            return int(float(self._write_read_cmd("position:%s\n" % (args[0]))))
+            csv = self._write_read_cmd("position:%s\n" % (args[0])).decode("utf-8")
+            (x, y) = csv.split(',')
+            return (int(float(x)), int(float(y)))
 
 
     def center(self, segment):
-        return self._write_read_cmd("center:%s\n" % segment)
+        csv = self._write_read_cmd("center:%s\n" % segment).decode("utf-8")
+        (h, v) = csv.split(',')
+        return (int(float(h)), int(float(v)))
 
 
     def speed(self, *args):
-        if (len(args) > 1):
-            self._write_cmd("speed:%s:%s\n" % (args[0], args[1]))
+        if (len(args) > 2):
+            self._write_cmd("speed:%s:%s:%s\n" % (args[0], args[1], args[2]))
         else:
-            return float(self._write_read_cmd("speed:%s\n" % (args[0])))
+            csv = self._write_read_cmd("speed:%s\n" % (args[0])).decode("utf-8")
+            (h, v) = csv.split(',')
+            return (int(float(h)), int(float(v)))
 
 
     def exit(self):
