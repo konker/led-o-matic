@@ -24,26 +24,26 @@ def main():
     # TODO: signal handler and guard variable
     while(True):
         bookings = None
-
         # Get the bookings response
         try:
             response = requests.get(url, headers=headers)
-            bookings = eval(response.text)['count']
-
-            if bookings != None and bookings != last_bookings:
-                # Get bookings count
-                bookings_disp = "{:,}".format(bookings)
-                #print(bookings_disp)
-
-                # Print bookings count to sign
-                animate_number_change(last_bookings_disp, bookings_disp)
-                lomd.center(0)
-
-            last_bookings = bookings
-            last_bookings_disp = bookings_disp
-            time.sleep(DATA_DELAY_SECS)
         except Exception as ex:
             print("Warning: caught error", ex)
+            time.sleep(DATA_DELAY_SECS)
+            next
+
+        bookings = eval(response.text)['count']
+
+        if bookings != None and bookings != last_bookings:
+            bookings_disp = "{:,}".format(bookings)
+            #print(bookings_disp)
+
+            # Print bookings count to sign
+            animate_number_change(last_bookings_disp, bookings_disp)
+
+        last_bookings = bookings
+        last_bookings_disp = bookings_disp
+        time.sleep(DATA_DELAY_SECS)
 
 
 # Repeatedly flash the display
@@ -75,7 +75,7 @@ def animate_number_change(from_n, to_n):
     while STAR in to_c_anim:
         s = "".join(to_c_anim)
         lomd.text(0, s)
-        lomd.center(0)
+        #lomd.center(0)
 
         idx = to_c_anim.index(STAR)
         to_c_anim[idx] = to_c[idx]

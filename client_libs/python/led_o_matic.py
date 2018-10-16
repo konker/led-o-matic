@@ -6,7 +6,7 @@ Author: Konrad Markus <konker@luxvelocitas.com>
 """
 import socket
 
-BUFSIZE = 1024
+BUFSIZE = 2048
 
 
 class LedOMatic(object):
@@ -15,17 +15,20 @@ class LedOMatic(object):
         self.port = port
         self.ip = ip
 
-        self.sock = socket.socket(socket.AF_INET, # Internet
-                                  socket.SOCK_DGRAM) # UDP
-
 
     def _write_cmd(self, cmd):
-        self.sock.sendto(cmd.encode(), (self.ip, self.port))
+        sock = socket.socket(socket.AF_INET, # Internet
+                             socket.SOCK_DGRAM) # UDP
+
+        sock.sendto(cmd.encode(), (self.ip, self.port))
 
 
     def _write_read_cmd(self, cmd):
-        self.sock.sendto(cmd.encode(), (self.ip, self.port))
-        data, fromaddr = self.sock.recvfrom(BUFSIZE)
+        sock = socket.socket(socket.AF_INET, # Internet
+                             socket.SOCK_DGRAM) # UDP
+
+        sock.sendto(cmd.encode(), (self.ip, self.port))
+        data, fromaddr = sock.recvfrom(BUFSIZE)
         return data
 
 
