@@ -39,8 +39,10 @@
 #define LEDOMATIC_CMD_SPEED "speed:%d:%f:%f"
 // Get/set the text position for a segment
 #define LEDOMATIC_CMD_POSITION "position:%d:%f:%f"
-// Centre the text on the given segment
-#define LEDOMATIC_CMD_CENTER "center:%d"
+// Get/set the centre coordinates of the text on the given segment
+#define LEDOMATIC_CMD_CENTER "center:%d:%f:%f"
+// Get the text pixel dimensions on the given segment
+#define LEDOMATIC_CMD_DIMENSIONS "dimensions:%d"
 
 
 /**
@@ -184,15 +186,34 @@ void handle_command(ledomaticd * const lomd, char *inbuf, char *outbuf) {
         }
         klm_seg_set_text_position(seg, num1, num2);
     }
-    else if (sscanf(inbuf, LEDOMATIC_CMD_CENTER, &seg_index) == 1) {
-        LEDOMATIC_LOG(*lomd, "UDP listener: [center %d]\n", seg_index);
+    else if (sscanf(inbuf, LEDOMATIC_CMD_CENTER, &seg_index, &num1, &num2) == 1) {
+        LEDOMATIC_LOG(*lomd, "UDP listener: [center? %d]\n", seg_index);
         seg = klm_segment_list_get_nth(lomd->matrix->segment_list, seg_index);
         if (seg == NULL) {
             LEDOMATIC_LOG(*lomd, "Warning: Bad segment index: %d - ignoring\n", seg_index);
             return;
         }
-        klm_seg_center_text(seg);
+        klm_seg_query_center_text(seg, &num1, &num2);
+        sprintf(outbuf, "%f,%f\n", num1, num2);
+    }
+    else if (sscanf(inbuf, LEDOMATIC_CMD_CENTER, &seg_index, &num1, &num2) == 3) {
+        LEDOMATIC_LOG(*lomd, "UDP listener: [center %d, h=%d, v=%d]\n", seg_index, num1, num2);
+        seg = klm_segment_list_get_nth(lomd->matrix->segment_list, seg_index);
+        if (seg == NULL) {
+            LEDOMATIC_LOG(*lomd, "Warning: Bad segment index: %d - ignoring\n", seg_index);
+            return;
+        }
+        klm_seg_center_text(seg, (bool)num1, (bool)num2);
         sprintf(outbuf, "%f,%f\n", seg->text_hpos, seg->text_vpos);
+    }
+    else if (sscanf(inbuf, LEDOMATIC_CMD_DIMENSIONS, &seg_index) == 1) {
+        LEDOMATIC_LOG(*lomd, "UDP listener: [dimensions? %d]\n", seg_index);
+        seg = klm_segment_list_get_nth(lomd->matrix->segment_list, seg_index);
+        if (seg == NULL) {
+            LEDOMATIC_LOG(*lomd, "Warning: Bad segment index: %d - ignoring\n", seg_index);
+            return;
+        }
+        sprintf(outbuf, "%d,%d\n", klm_seg_get_text_pixel_width(seg), klm_seg_get_text_pixel_height(seg));
     }
     else {
         LEDOMATIC_LOG(*lomd, "UDP listener: [unknown]\n");
