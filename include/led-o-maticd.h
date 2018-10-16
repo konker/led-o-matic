@@ -48,7 +48,7 @@
 #define LEDOMATIC_TOSTRING(x) LEDOMATIC_STRINGIFY(x)
 
 // 1 thousand => 1 millisecond
-#define LEDOMATIC_TICK_PERIOD_MICROS 400
+#define LEDOMATIC_TICK_PERIOD_MICROS 500
 
 
 #ifdef __cplusplus

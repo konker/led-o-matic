@@ -176,6 +176,7 @@ int main(int argc, char **argv) {
         }
 
         klm_mat_scan(lomd.matrix);
+        klm_mat_tick(lomd.matrix);
     }
 
     // Main loop now finished...
