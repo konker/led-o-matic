@@ -83,7 +83,7 @@ def animate_number_change(from_n, to_n):
 
     s = "".join(to_c_anim)
     lomd.text(0, s)
-    lomd.center(0)
+    lomd.center(0, 1, 1)
 
 if __name__ == '__main__':
     main()

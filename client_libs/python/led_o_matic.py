@@ -83,8 +83,18 @@ class LedOMatic(object):
             return (int(float(x)), int(float(y)))
 
 
-    def center(self, segment):
-        csv = self._write_read_cmd("center:%s\n" % segment).decode("utf-8")
+    def dimensions(self, segment):
+        csv = self._write_read_cmd("dimensions:%s\n" % segment).decode("utf-8")
+        (x, y) = csv.split(',')
+        return (int(float(x)), int(float(y)))
+
+
+    def center(self, *args):
+        if (len(args) > 2):
+            csv = self._write_read_cmd("center:%s:%s:%s\n" % (args[0], args[1], args[2])).decode("utf-8")
+        else:
+            csv = self._write_read_cmd("center:%s\n" % segment).decode("utf-8")
+
         (h, v) = csv.split(',')
         return (int(float(h)), int(float(v)))
 
