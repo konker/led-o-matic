@@ -164,6 +164,9 @@ int ledomatic_config_handler_p2(void* user, const char* section,
         config->segment_configs[ledomatic_config_cur_segment_index].font_index = atoi(value);
         ledomatic_config_segment_field_count++;
     }
+    else if (MATCH("matrix", "driver")) {
+        config->driver = strdup(value);
+    }
     else if (MATCH("matrix", "width")) {
         config->matrix_width = atoi(value);
     }

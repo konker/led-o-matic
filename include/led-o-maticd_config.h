@@ -48,6 +48,8 @@ typedef struct {
 } ledomatic_config_segment;
 
 typedef struct {
+    char * driver;
+
     // UDP listener
     char *udp_host;
     char *udp_port;
