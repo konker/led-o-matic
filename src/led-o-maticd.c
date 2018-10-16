@@ -76,8 +76,8 @@ int main(int argc, char **argv) {
         fclose(lomd.logfp);
         exit(EXIT_FAILURE);
     }
-    LEDOMATIC_LOG(lomd, "Config loaded from '%s': matrix_width=%d, matrix_height=%d\n",
-                  lomd.args.config_file, lomd.config.matrix_width, lomd.config.matrix_height);
+    LEDOMATIC_LOG(lomd, "Config loaded from '%s': driver=%s, matrix_width=%d, matrix_height=%d\n",
+                  lomd.args.config_file, lomd.config.driver, lomd.config.matrix_width, lomd.config.matrix_height);
 
 #ifndef LEDOMATIC_NO_FORK
     // ----------------------------------------------------------------------
@@ -170,17 +170,9 @@ int main(int argc, char **argv) {
     // ----------------------------------------------------------------------
     // The main loop
     while (lomd.running) {
-        KLM_NOW_MICROSECS(lomd.micros_1, lomd.now_t);
-
         // Delay at the beginning of each complete scan to make loop time consistent
         if (lomd.matrix->scan_row == 0) {
-            int64_t period = LEDOMATIC_TICK_PERIOD_MICROS
-                             - (lomd.micros_1 - lomd.micros_0);
-
-            if (period > 0) {
-                usleep(period);
-            }
-            lomd.micros_0 = lomd.micros_1;
+            usleep(LEDOMATIC_TICK_PERIOD_MICROS);
         }
 
         klm_mat_scan(lomd.matrix);
